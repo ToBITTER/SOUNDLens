@@ -23,6 +23,7 @@ export interface MusicProvider {
   getProfile(accessToken: string): Promise<MusicProfile>;
   getRecentlyPlayed(accessToken: string, limit?: number): Promise<SpotifyRecentlyPlayedItem[]>;
   getCurrentUserPlaylists?(accessToken: string, limit?: number): Promise<unknown>;
+  search?(accessToken: string, query: string): Promise<MusicSearchResults>;
 }
 
 export interface SpotifyRecentlyPlayedItem {
@@ -48,4 +49,25 @@ export interface SpotifyRecentlyPlayedItem {
       popularity?: number;
     }>;
   };
+}
+
+export interface MusicSearchResults {
+  tracks: Array<{
+    id: string;
+    name: string;
+    artistName: string;
+    albumName?: string | null;
+    imageUrl?: string | null;
+    durationMs?: number;
+  }>;
+  artists: Array<{
+    id: string;
+    name: string;
+    imageUrl?: string | null;
+  }>;
+  albums: Array<{
+    id: string;
+    name: string;
+    imageUrl?: string | null;
+  }>;
 }

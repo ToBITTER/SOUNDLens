@@ -1,9 +1,16 @@
-import type { MusicProfile, MusicProvider, OAuthTokenSet, SpotifyRecentlyPlayedItem } from "./music-provider";
+import type {
+  MusicProfile,
+  MusicProvider,
+  MusicSearchResults,
+  OAuthTokenSet,
+  SpotifyRecentlyPlayedItem,
+} from "./music-provider";
 
 const SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_ME_URL = "https://api.spotify.com/v1/me";
 const SPOTIFY_RECENTLY_PLAYED_URL = "https://api.spotify.com/v1/me/player/recently-played";
+const SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search";
 
 export class SpotifyProvider implements MusicProvider {
   key = "spotify";
@@ -157,5 +164,43 @@ export class SpotifyProvider implements MusicProvider {
         })),
       },
     }));
+  }
+
+  async search(accessToken: string, query: string): Promise<MusicSearchResults> {
+    const url = new URL(SPOTIFY_SEARCH_URL);
+    url.searchParams.set("q", query);
+    url.searchParams.set("type", "track,artist,album");
+    url.searchParams.set("limit", "10");
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to search Spotify");
+    }
+
+    const data = await response.json();
+    return {
+      tracks: (data.tracks?.items ?? []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        artistName: item.artists?.[0]?.name ?? "Unknown artist",
+        albumName: item.album?.name ?? null,
+        imageUrl: item.album?.images?.[0]?.url ?? null,
+        durationMs: item.duration_ms,
+      })),
+      artists: (data.artists?.items ?? []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        imageUrl: item.images?.[0]?.url ?? null,
+      })),
+      albums: (data.albums?.items ?? []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        imageUrl: item.images?.[0]?.url ?? null,
+      })),
+    };
   }
 }
