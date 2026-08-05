@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import { SpotifyProvider } from "@/lib/providers/spotify";
 import { encryptText } from "@/lib/auth/crypto";
 import { createSession } from "@/lib/auth/session-store";
+import { syncUserRecentlyPlayed } from "@/server/services/listening-sync.service";
+import { recomputeAnalyticsSnapshot } from "@/server/services/analytics.service";
 
 function getAppOrigin(url: URL) {
   return (
@@ -103,6 +105,8 @@ export async function GET(request: Request) {
   });
 
   await createSession(user.id);
+  await syncUserRecentlyPlayed(user.id);
+  await recomputeAnalyticsSnapshot(user.id);
 
   const response = NextResponse.redirect(new URL("/dashboard", getAppOrigin(url)));
   response.cookies.set("soundlens_oauth_state", "", { expires: new Date(0), path: "/" });
