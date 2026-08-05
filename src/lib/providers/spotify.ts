@@ -1,8 +1,9 @@
-import type { MusicProfile, MusicProvider, OAuthTokenSet } from "./music-provider";
+import type { MusicProfile, MusicProvider, OAuthTokenSet, SpotifyRecentlyPlayedItem } from "./music-provider";
 
 const SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_ME_URL = "https://api.spotify.com/v1/me";
+const SPOTIFY_RECENTLY_PLAYED_URL = "https://api.spotify.com/v1/me/player/recently-played";
 
 export class SpotifyProvider implements MusicProvider {
   key = "spotify";
@@ -114,5 +115,47 @@ export class SpotifyProvider implements MusicProvider {
       productType: data.product ?? null,
       email: data.email ?? null,
     };
+  }
+
+  async getRecentlyPlayed(accessToken: string, limit = 50): Promise<SpotifyRecentlyPlayedItem[]> {
+    const url = new URL(SPOTIFY_RECENTLY_PLAYED_URL);
+    url.searchParams.set("limit", String(limit));
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to load Spotify recently played tracks");
+    }
+
+    const data = await response.json();
+    return (data.items ?? []).map((item: any) => ({
+      playedAt: item.played_at,
+      track: {
+        id: item.track.id,
+        name: item.track.name,
+        duration_ms: item.track.duration_ms,
+        explicit: item.track.explicit,
+        popularity: item.track.popularity,
+        album: item.track.album
+          ? {
+              id: item.track.album.id,
+              name: item.track.album.name,
+              images: item.track.album.images,
+              release_date: item.track.album.release_date,
+              total_tracks: item.track.album.total_tracks,
+            }
+          : undefined,
+        artists: (item.track.artists ?? []).map((artist: any) => ({
+          id: artist.id,
+          name: artist.name,
+          genres: artist.genres,
+          images: artist.images,
+          popularity: artist.popularity,
+        })),
+      },
+    }));
   }
 }
