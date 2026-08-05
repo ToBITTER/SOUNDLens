@@ -22,13 +22,14 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const storedState = cookieStore.get("soundlens_oauth_state")?.value;
   const codeVerifier = cookieStore.get("soundlens_pkce_verifier")?.value;
+  const redirectUri = cookieStore.get("soundlens_spotify_redirect_uri")?.value;
 
   if (!storedState || storedState !== state) {
     return NextResponse.json({ ok: false, error: "Invalid OAuth state" }, { status: 400 });
   }
 
   const provider = new SpotifyProvider();
-  const tokenSet = await provider.exchangeCode(code, codeVerifier);
+  const tokenSet = await provider.exchangeCode(code, codeVerifier, redirectUri);
   const profile = await provider.getProfile(tokenSet.accessToken);
 
   const providerRow = await prisma.provider.upsert({
@@ -98,5 +99,6 @@ export async function GET(request: Request) {
   const response = NextResponse.redirect(new URL("/dashboard", url.origin));
   response.cookies.set("soundlens_oauth_state", "", { expires: new Date(0), path: "/" });
   response.cookies.set("soundlens_pkce_verifier", "", { expires: new Date(0), path: "/" });
+  response.cookies.set("soundlens_spotify_redirect_uri", "", { expires: new Date(0), path: "/" });
   return response;
 }

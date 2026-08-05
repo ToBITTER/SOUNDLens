@@ -18,7 +18,7 @@ export interface OAuthTokenSet {
 export interface MusicProvider {
   key: string;
   getAuthUrl(state: string, codeChallenge?: string): string;
-  exchangeCode(code: string, codeVerifier?: string): Promise<OAuthTokenSet>;
+  exchangeCode(code: string, codeVerifier?: string, redirectUri?: string): Promise<OAuthTokenSet>;
   refreshAccessToken(refreshToken: string): Promise<OAuthTokenSet>;
   getProfile(accessToken: string): Promise<MusicProfile>;
   getRecentlyPlayed(accessToken: string, limit?: number): Promise<SpotifyRecentlyPlayedItem[]>;

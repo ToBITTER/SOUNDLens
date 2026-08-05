@@ -30,6 +30,13 @@ export async function GET(request: Request) {
     path: "/",
     maxAge: 60 * 10,
   });
+  response.cookies.set("soundlens_spotify_redirect_uri", redirectUri, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 10,
+  });
 
   return response;
 }
