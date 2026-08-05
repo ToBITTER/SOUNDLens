@@ -13,6 +13,12 @@ export interface RecentlyPlayedItem {
   playedDurationMs: number;
 }
 
+export interface DashboardTopItem {
+  id: string;
+  name: string;
+  minutes: number;
+}
+
 export async function buildDashboardSummary(userId: string) {
   const [today, week, month, recentPlays, topTracks, topArtists] = await Promise.all([
     prisma.listeningHistory.aggregate({
@@ -51,11 +57,31 @@ export async function buildDashboardSummary(userId: string) {
     }),
   ]);
 
+  const [trackEntities, artistEntities, latestSession] = await Promise.all([
+    prisma.track.findMany({
+      where: { id: { in: topTracks.map((item) => item.trackId).filter(Boolean) as string[] } },
+      select: { id: true, name: true },
+    }),
+    prisma.artist.findMany({
+      where: { id: { in: topArtists.map((item) => item.artistId).filter(Boolean) as string[] } },
+      select: { id: true, name: true },
+    }),
+    prisma.listeningSession.findFirst({
+      where: { userId },
+      orderBy: { startedAt: "desc" },
+    }),
+  ]);
+
   return {
     metrics: {
       todayListeningTimeMinutes: minutes(today._sum.playedDurationMs ?? 0),
       weekListeningTimeMinutes: minutes(week._sum.playedDurationMs ?? 0),
       monthListeningTimeMinutes: minutes(month._sum.playedDurationMs ?? 0),
+      averageListeningPerDay: minutes((month._sum.playedDurationMs ?? 0) / 30),
+      listeningStreakDays: latestSession ? 1 : 0,
+      currentListeningSessionMinutes: latestSession ? minutes(latestSession.durationMs) : 0,
+      musicDiscoveryCount: 0,
+      newArtistsThisMonth: 0,
     },
     recentlyPlayed: recentPlays.map<RecentlyPlayedItem>((play) => ({
       id: play.id,
@@ -63,8 +89,17 @@ export async function buildDashboardSummary(userId: string) {
       playedAt: play.playedAt,
       playedDurationMs: play.playedDurationMs,
     })),
-    topTracks,
-    topArtists,
+    topTracks: topTracks.map<DashboardTopItem>((item) => ({
+      id: item.trackId ?? "",
+      name: trackEntities.find((track) => track.id === item.trackId)?.name ?? "Unknown track",
+      minutes: minutes(item._sum.playedDurationMs ?? 0),
+    })),
+    topArtists: topArtists.map<DashboardTopItem>((item) => ({
+      id: item.artistId ?? "",
+      name: artistEntities.find((artist) => artist.id === item.artistId)?.name ?? "Unknown artist",
+      minutes: minutes(item._sum.playedDurationMs ?? 0),
+    })),
+    latestSession,
   };
 }
 

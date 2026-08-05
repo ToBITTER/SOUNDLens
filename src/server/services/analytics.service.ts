@@ -59,6 +59,71 @@ export async function buildAnalyticsOverview(userId: string) {
     }),
   ]);
 
+  const monthRows = await prisma.listeningHistory.findMany({
+    where: { userId, playedAt: { gte: startOfMonth(now) } },
+    include: {
+      track: {
+        include: {
+          trackArtists: {
+            include: {
+              artist: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const hourBuckets = Array.from({ length: 24 }, () => 0);
+  const weekdayBuckets = Array.from({ length: 7 }, () => 0);
+  const genreBuckets = new Map<string, number>();
+  const dayTrend = new Map<string, number>();
+  const artistBuckets = new Map<string, number>();
+
+  for (const row of monthRows) {
+    const playedMs = row.playedDurationMs;
+    hourBuckets[row.playedAt.getHours()] += playedMs;
+    weekdayBuckets[row.playedAt.getDay()] += playedMs;
+    const dayKey = row.playedAt.toISOString().slice(0, 10);
+    dayTrend.set(dayKey, (dayTrend.get(dayKey) ?? 0) + playedMs);
+
+    const artists = row.track.trackArtists.map((trackArtist) => trackArtist.artist);
+    for (const artist of artists) {
+      artistBuckets.set(artist.name, (artistBuckets.get(artist.name) ?? 0) + playedMs);
+      const genres = Array.isArray(artist.genresCached) ? artist.genresCached : [];
+      for (const genre of genres) {
+        if (typeof genre !== "string") continue;
+        genreBuckets.set(genre, (genreBuckets.get(genre) ?? 0) + playedMs / Math.max(genres.length, 1));
+      }
+    }
+  }
+
+  const totalGenreDuration = [...genreBuckets.values()].reduce((sum, value) => sum + value, 0) || 1;
+  const genreDistribution = [...genreBuckets.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([genre, value]) => ({
+      genre,
+      percent: Math.round((value / totalGenreDuration) * 100),
+    }));
+
+  const listeningTrend = [...dayTrend.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, value]) => ({
+      day,
+      minutes: minutes(value),
+    }));
+
+  const heatmapHour = hourBuckets.map((value, hour) => ({
+    hour,
+    minutes: minutes(value),
+  }));
+
+  const heatmapWeekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => ({
+    day,
+    minutes: minutes(weekdayBuckets[index]),
+  }));
+
   return {
     current: {
       todayListeningMinutes: minutes(daily._sum.playedDurationMs ?? 0),
@@ -71,6 +136,16 @@ export async function buildAnalyticsOverview(userId: string) {
       yearPlays: yearly._count,
     },
     latestSnapshot: recentSnapshot,
+    charts: {
+      listeningTrend,
+      heatmapHour,
+      heatmapWeekday,
+      genreDistribution,
+      topArtists: [...artistBuckets.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, value]) => ({ name, minutes: minutes(value) })),
+    },
   };
 }
 
