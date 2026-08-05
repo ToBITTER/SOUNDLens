@@ -15,11 +15,12 @@ const SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search";
 export class SpotifyProvider implements MusicProvider {
   key = "spotify";
 
-  getAuthUrl(state: string, codeChallenge?: string) {
+  getAuthUrl(state: string, codeChallenge?: string, redirectUri?: string) {
+    const resolvedRedirectUri = redirectUri ?? process.env.SPOTIFY_REDIRECT_URI ?? "";
     const params = new URLSearchParams({
       client_id: process.env.SPOTIFY_CLIENT_ID ?? "",
       response_type: "code",
-      redirect_uri: process.env.SPOTIFY_REDIRECT_URI ?? "",
+      redirect_uri: resolvedRedirectUri,
       scope: "user-read-private user-read-email user-read-recently-played playlist-read-private",
       state,
     });
@@ -32,8 +33,8 @@ export class SpotifyProvider implements MusicProvider {
     return `${SPOTIFY_AUTHORIZE_URL}?${params.toString()}`;
   }
 
-  getPkceAuthUrl(state: string, codeChallenge: string) {
-    return this.getAuthUrl(state, codeChallenge);
+  getPkceAuthUrl(state: string, codeChallenge: string, redirectUri?: string) {
+    return this.getAuthUrl(state, codeChallenge, redirectUri);
   }
 
   async exchangeCode(code: string, codeVerifier?: string): Promise<OAuthTokenSet> {
