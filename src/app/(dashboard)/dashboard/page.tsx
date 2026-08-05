@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { buildDashboardSummary } from "@/server/services/dashboard.service";
 import { buildAnalyticsOverview } from "@/server/services/analytics.service";
 import type { RecentlyPlayedItem } from "@/server/services/dashboard.service";
+import Link from "next/link";
 
 function formatMinutes(minutes: number) {
   if (minutes < 60) return `${minutes}m`;
@@ -48,6 +49,22 @@ export default async function DashboardPage() {
               </span>
             </div>
           </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <form action="/api/sync-now" method="post">
+              <button
+                type="submit"
+                className="rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-black transition hover:bg-emerald-400"
+              >
+                Sync Now
+              </button>
+            </form>
+            <Link
+              href="/api/dashboard"
+              className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/5"
+            >
+              Refresh Data
+            </Link>
+          </div>
         </header>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -72,9 +89,15 @@ export default async function DashboardPage() {
             </div>
             <div className="mt-6 space-y-3">
               {dashboard.recentlyPlayed.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-white/55">
-                  No listening history yet. Once the first sync lands, this section will fill with your recent tracks.
-                </p>
+                <div className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-white/60">
+                  <p className="font-medium text-white">No listening history yet.</p>
+                  <p className="mt-2">
+                    Click <span className="text-emerald-400">Sync Now</span> above to pull your latest Spotify plays into the dashboard.
+                  </p>
+                  <p className="mt-2 text-white/45">
+                    If your Spotify account has not played anything recently, the section will stay empty until there is data.
+                  </p>
+                </div>
               ) : (
                 dashboard.recentlyPlayed.map((item: RecentlyPlayedItem) => (
                   <div
