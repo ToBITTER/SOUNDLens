@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { buildDashboardSummary } from "@/server/services/dashboard.service";
 import { buildAnalyticsOverview } from "@/server/services/analytics.service";
+import type { RecentlyPlayedItem } from "@/server/services/dashboard.service";
 
 function formatMinutes(minutes: number) {
   if (minutes < 60) return `${minutes}m`;
@@ -75,7 +76,7 @@ export default async function DashboardPage() {
                   No listening history yet. Once the first sync lands, this section will fill with your recent tracks.
                 </p>
               ) : (
-                dashboard.recentlyPlayed.map((item) => (
+                dashboard.recentlyPlayed.map((item: RecentlyPlayedItem) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3"

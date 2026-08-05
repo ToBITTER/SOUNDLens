@@ -9,7 +9,7 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: "JOB_SECRET is not configured" }, { status: 500 });
   }
 
-  const requestHeaders = headers();
+  const requestHeaders = await headers();
   const providedSecret =
     requestHeaders.get("x-job-secret") ??
     requestHeaders.get("authorization")?.replace(/^Bearer\s+/i, "");

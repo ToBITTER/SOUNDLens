@@ -4,6 +4,15 @@ function minutes(ms: number) {
   return Math.round(ms / 60000);
 }
 
+export type DashboardSummary = Awaited<ReturnType<typeof buildDashboardSummary>>;
+
+export interface RecentlyPlayedItem {
+  id: string;
+  trackName: string;
+  playedAt: Date;
+  playedDurationMs: number;
+}
+
 export async function buildDashboardSummary(userId: string) {
   const [today, week, month, recentPlays, topTracks, topArtists] = await Promise.all([
     prisma.listeningHistory.aggregate({
@@ -48,7 +57,7 @@ export async function buildDashboardSummary(userId: string) {
       weekListeningTimeMinutes: minutes(week._sum.playedDurationMs ?? 0),
       monthListeningTimeMinutes: minutes(month._sum.playedDurationMs ?? 0),
     },
-    recentlyPlayed: recentPlays.map((play) => ({
+    recentlyPlayed: recentPlays.map<RecentlyPlayedItem>((play) => ({
       id: play.id,
       trackName: play.track.name,
       playedAt: play.playedAt,

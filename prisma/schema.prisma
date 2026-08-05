@@ -50,6 +50,7 @@ model User {
   reports         Report[]
   notifications   Notification[]
   jobRuns         JobRun[]
+  playlists       Playlist[]
 }
 
 model Session {
