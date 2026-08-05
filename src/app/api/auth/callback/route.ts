@@ -5,6 +5,14 @@ import { SpotifyProvider } from "@/lib/providers/spotify";
 import { encryptText } from "@/lib/auth/crypto";
 import { createSession } from "@/lib/auth/session-store";
 
+function getAppOrigin(url: URL) {
+  return (
+    process.env.APP_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    new URL(process.env.SPOTIFY_REDIRECT_URI ?? url.origin).origin
+  );
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
@@ -12,7 +20,7 @@ export async function GET(request: Request) {
   const error = url.searchParams.get("error");
 
   if (error) {
-    return NextResponse.redirect(new URL(`/?auth_error=${encodeURIComponent(error)}`, url.origin));
+    return NextResponse.redirect(new URL(`/?auth_error=${encodeURIComponent(error)}`, getAppOrigin(url)));
   }
 
   if (!code || !state) {
@@ -96,7 +104,7 @@ export async function GET(request: Request) {
 
   await createSession(user.id);
 
-  const response = NextResponse.redirect(new URL("/dashboard", url.origin));
+  const response = NextResponse.redirect(new URL("/dashboard", getAppOrigin(url)));
   response.cookies.set("soundlens_oauth_state", "", { expires: new Date(0), path: "/" });
   response.cookies.set("soundlens_pkce_verifier", "", { expires: new Date(0), path: "/" });
   response.cookies.set("soundlens_spotify_redirect_uri", "", { expires: new Date(0), path: "/" });
