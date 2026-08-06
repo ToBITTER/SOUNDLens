@@ -1,9 +1,10 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { RefreshButton } from "@/components/dashboard/refresh-button";
+import { SyncNowButton } from "@/components/dashboard/sync-now-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { buildAnalyticsOverview } from "@/server/services/analytics.service";
 import { buildDashboardSummary } from "@/server/services/dashboard.service";
 import type { DashboardTopItem, RecentlyPlayedItem } from "@/server/services/dashboard.service";
+import { redirect } from "next/navigation";
 
 function formatMinutes(minutes: number) {
   if (minutes < 60) return `${minutes}m`;
@@ -92,26 +93,14 @@ export default async function DashboardPage() {
                 Hey {user.displayName}, your music is already telling on you.
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
-                Quick pulse on your listening, tiny bragging rights, and the occasional reminder that
-                Burna Boy might be winning the month again.
+                Quick pulse on your listening, tiny bragging rights, and the occasional reminder that Burna Boy
+                might be winning the month again.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <form action="/api/sync-now" method="post">
-                <button
-                  type="submit"
-                  className="rounded-full bg-gradient-to-r from-emerald-300 via-lime-300 to-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_18px_45px_rgba(16,185,129,0.34)] transition hover:scale-[1.02]"
-                >
-                  Sync Now
-                </button>
-              </form>
-              <Link
-                href="/api/reports"
-                className="rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-5 py-2.5 text-sm font-medium text-fuchsia-100 transition hover:bg-fuchsia-400/18 hover:scale-[1.02]"
-              >
-                View Reports
-              </Link>
+              <SyncNowButton />
+              <RefreshButton />
             </div>
           </div>
 
@@ -145,7 +134,8 @@ export default async function DashboardPage() {
                 <div className="rounded-[1.6rem] border border-dashed border-fuchsia-300/20 bg-[linear-gradient(180deg,rgba(17,24,39,0.85),rgba(15,23,42,0.55))] p-6 text-sm text-white/60">
                   <p className="font-medium text-white">Still quiet in here.</p>
                   <p className="mt-2">
-                    Hit <span className="text-emerald-300">Sync Now</span> so we can go fetch your latest Spotify plays.
+                    Hit <span className="text-emerald-300">Sync Now</span> so we can go fetch your latest Spotify
+                    plays.
                   </p>
                 </div>
               ) : (
@@ -158,7 +148,9 @@ export default async function DashboardPage() {
                       <p className="font-medium text-white">{item.trackName}</p>
                       <p className="text-sm text-white/50">{new Date(item.playedAt).toLocaleString()}</p>
                     </div>
-                    <span className="text-sm text-white/70">{formatMinutes(Math.round(item.playedDurationMs / 60000))}</span>
+                    <span className="text-sm text-white/70">
+                      {formatMinutes(Math.round(item.playedDurationMs / 60000))}
+                    </span>
                   </div>
                 ))
               )}
@@ -168,14 +160,21 @@ export default async function DashboardPage() {
           <div className="grid gap-6">
             <SectionShell eyebrow="Mood check" title="Tiny truths">
               <div className="grid gap-3 sm:grid-cols-2">
-                <MetricPill label="Most active hour" value={String((analytics.latestSnapshot?.metricsJson as Record<string, unknown> | undefined)?.activeHour ?? "N/A")} />
+                <MetricPill
+                  label="Most active hour"
+                  value={String((analytics.latestSnapshot?.metricsJson as Record<string, unknown> | undefined)?.activeHour ?? "N/A")}
+                />
                 <MetricPill label="Snapshot" value={analytics.latestSnapshot ? "Fresh" : "Waiting"} />
                 <MetricPill label="Connected" value={user.connectedSince.toLocaleDateString()} />
                 <MetricPill label="Plan" value={user.productType ?? "N/A"} />
               </div>
             </SectionShell>
 
-            <SectionShell eyebrow="Next up" title="What the app is plotting" subtitle="The system is set up for hourly syncs, weekly reports, and monthly recaps.">
+            <SectionShell
+              eyebrow="Next up"
+              title="What the app is plotting"
+              subtitle="The system is set up for hourly syncs, weekly reports, and monthly recaps."
+            >
               <div className="space-y-3 text-sm text-white/66">
                 <p>• Automatic syncs can refresh the dashboard with your latest listening.</p>
                 <p>• Weekly and monthly reports are queued from the backend.</p>
@@ -186,7 +185,7 @@ export default async function DashboardPage() {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-2">
-            <SectionShell eyebrow="Trend line" title="Listening over time" subtitle="A smooth little pulse instead of a stiff business chart.">
+          <SectionShell eyebrow="Trend line" title="Listening over time" subtitle="A smooth little pulse instead of a stiff business chart.">
             <div className="flex items-end gap-2 overflow-x-auto pb-2">
               {analytics.charts.listeningTrend.length === 0 ? (
                 <p className="text-sm text-white/55">No trend data yet. Sync will grow this over time.</p>
@@ -204,7 +203,11 @@ export default async function DashboardPage() {
             </div>
           </SectionShell>
 
-          <SectionShell eyebrow="Heat" title="When you really listen" subtitle="Your music habits by hour and weekday, turned into an easy glance.">
+          <SectionShell
+            eyebrow="Heat"
+            title="When you really listen"
+            subtitle="Your music habits by hour and weekday, turned into an easy glance."
+          >
             <div className="space-y-5">
               <div>
                 <p className="mb-3 text-sm text-white/55">By hour</p>
@@ -241,7 +244,11 @@ export default async function DashboardPage() {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-2">
-          <SectionShell eyebrow="Genre mix" title="What your ears are leaning toward" subtitle="Estimated from artist metadata, because Spotify won’t make it simple for us.">
+          <SectionShell
+            eyebrow="Genre mix"
+            title="What your ears are leaning toward"
+            subtitle="Estimated from artist metadata, because Spotify won’t make it simple for us."
+          >
             <div className="space-y-4">
               {analytics.charts.genreDistribution.length === 0 ? (
                 <p className="text-sm text-white/55">No genre data yet.</p>
@@ -281,7 +288,10 @@ export default async function DashboardPage() {
                 <p className="text-sm text-white/55">No track data yet. Run sync to populate this section.</p>
               ) : (
                 dashboard.topTracks.map((track: DashboardTopItem, index: number) => (
-                  <div key={track.id || index} className="flex items-center justify-between rounded-[1.45rem] border border-white/8 bg-black/15 px-4 py-3">
+                  <div
+                    key={track.id || index}
+                    className="flex items-center justify-between rounded-[1.45rem] border border-white/8 bg-black/15 px-4 py-3"
+                  >
                     <div>
                       <p className="font-medium text-white">{track.name}</p>
                       <p className="text-sm text-white/50">Rank #{index + 1}</p>
@@ -299,7 +309,10 @@ export default async function DashboardPage() {
                 <p className="text-sm text-white/55">No artist data yet. Run sync to populate this section.</p>
               ) : (
                 dashboard.topArtists.map((artist: DashboardTopItem, index: number) => (
-                  <div key={artist.id || index} className="flex items-center justify-between rounded-[1.45rem] border border-white/8 bg-black/15 px-4 py-3">
+                  <div
+                    key={artist.id || index}
+                    className="flex items-center justify-between rounded-[1.45rem] border border-white/8 bg-black/15 px-4 py-3"
+                  >
                     <div>
                       <p className="font-medium text-white">{artist.name}</p>
                       <p className="text-sm text-white/50">Rank #{index + 1}</p>
@@ -329,10 +342,18 @@ export default async function DashboardPage() {
 
           <SectionShell eyebrow="Profile" title="Your account">
             <div className="space-y-3 text-sm text-white/70">
-              <p>Spotify name: <span className="font-medium text-white">{user.displayName}</span></p>
-              <p>Country: <span className="font-medium text-white">{user.country ?? "N/A"}</span></p>
-              <p>Spotify plan: <span className="font-medium text-white">{user.productType ?? "N/A"}</span></p>
-              <p>Connected since: <span className="font-medium text-white">{user.connectedSince.toLocaleDateString()}</span></p>
+              <p>
+                Spotify name: <span className="font-medium text-white">{user.displayName}</span>
+              </p>
+              <p>
+                Country: <span className="font-medium text-white">{user.country ?? "N/A"}</span>
+              </p>
+              <p>
+                Spotify plan: <span className="font-medium text-white">{user.productType ?? "N/A"}</span>
+              </p>
+              <p>
+                Connected since: <span className="font-medium text-white">{user.connectedSince.toLocaleDateString()}</span>
+              </p>
             </div>
           </SectionShell>
         </section>
