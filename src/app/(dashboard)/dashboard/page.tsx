@@ -27,7 +27,7 @@ function SectionShell({
 }) {
   return (
     <section
-      className={`overflow-hidden rounded-[2.25rem] border border-white/8 bg-white/[0.055] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-6 ${className}`}
+      className={`overflow-hidden rounded-[2.25rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6 ${className}`}
     >
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
@@ -43,8 +43,8 @@ function SectionShell({
 
 function MetricPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.4rem] border border-white/8 bg-black/15 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.28em] text-white/45">{label}</p>
+    <div className="rounded-[1.4rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.88),rgba(2,6,23,0.58))] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.25)]">
+      <p className="text-[11px] uppercase tracking-[0.28em] text-emerald-200/70">{label}</p>
       <p className="mt-2 text-xl font-semibold text-white">{value}</p>
     </div>
   );
@@ -82,8 +82,9 @@ export default async function DashboardPage() {
     <main className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <section className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.06] p-6 shadow-[0_40px_120px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-8">
-          <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl" />
+          <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emerald-400/25 blur-3xl" />
+          <div className="absolute right-1/4 top-10 h-52 w-52 rounded-full bg-fuchsia-500/15 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-400/12 blur-3xl" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-[11px] uppercase tracking-[0.45em] text-emerald-300/80">SoundLens</p>
@@ -100,14 +101,14 @@ export default async function DashboardPage() {
               <form action="/api/sync-now" method="post">
                 <button
                   type="submit"
-                  className="rounded-full bg-emerald-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+                  className="rounded-full bg-gradient-to-r from-emerald-300 via-lime-300 to-cyan-300 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_18px_45px_rgba(16,185,129,0.34)] transition hover:scale-[1.02]"
                 >
                   Sync Now
                 </button>
               </form>
               <Link
                 href="/api/reports"
-                className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
+                className="rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-5 py-2.5 text-sm font-medium text-fuchsia-100 transition hover:bg-fuchsia-400/18 hover:scale-[1.02]"
               >
                 View Reports
               </Link>
@@ -125,9 +126,9 @@ export default async function DashboardPage() {
           {insightBlocks.map((item) => (
             <div
               key={item.label}
-              className="rounded-[1.8rem] border border-emerald-300/10 bg-emerald-300/6 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.2)]"
+              className="rounded-[1.8rem] border border-emerald-300/12 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.75))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
             >
-              <p className="text-[11px] uppercase tracking-[0.32em] text-emerald-200/70">{item.label}</p>
+              <p className="text-[11px] uppercase tracking-[0.32em] text-emerald-200/75">{item.label}</p>
               <p className="mt-3 text-2xl font-semibold text-white">{item.value}</p>
             </div>
           ))}
@@ -141,7 +142,7 @@ export default async function DashboardPage() {
           >
             <div className="space-y-3">
               {dashboard.recentlyPlayed.length === 0 ? (
-                <div className="rounded-[1.6rem] border border-dashed border-white/10 bg-black/10 p-6 text-sm text-white/60">
+                <div className="rounded-[1.6rem] border border-dashed border-fuchsia-300/20 bg-[linear-gradient(180deg,rgba(17,24,39,0.85),rgba(15,23,42,0.55))] p-6 text-sm text-white/60">
                   <p className="font-medium text-white">Still quiet in here.</p>
                   <p className="mt-2">
                     Hit <span className="text-emerald-300">Sync Now</span> so we can go fetch your latest Spotify plays.
@@ -151,7 +152,7 @@ export default async function DashboardPage() {
                 dashboard.recentlyPlayed.map((item: RecentlyPlayedItem) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-[1.45rem] border border-white/8 bg-black/15 px-4 py-3 transition hover:bg-black/25"
+                    className="flex items-center justify-between rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.55))] px-4 py-3 transition hover:-translate-y-0.5 hover:border-fuchsia-300/25 hover:bg-black/25"
                   >
                     <div>
                       <p className="font-medium text-white">{item.trackName}</p>
@@ -185,7 +186,7 @@ export default async function DashboardPage() {
         </section>
 
         <section className="grid gap-6 xl:grid-cols-2">
-          <SectionShell eyebrow="Trend line" title="Listening over time" subtitle="A smooth little pulse instead of a stiff business chart.">
+            <SectionShell eyebrow="Trend line" title="Listening over time" subtitle="A smooth little pulse instead of a stiff business chart.">
             <div className="flex items-end gap-2 overflow-x-auto pb-2">
               {analytics.charts.listeningTrend.length === 0 ? (
                 <p className="text-sm text-white/55">No trend data yet. Sync will grow this over time.</p>
@@ -193,7 +194,7 @@ export default async function DashboardPage() {
                 analytics.charts.listeningTrend.map((point) => (
                   <div key={point.day} className="flex min-w-[32px] flex-1 flex-col items-center gap-2">
                     <div
-                      className="w-full rounded-t-2xl bg-gradient-to-t from-emerald-300 to-cyan-300 transition-all"
+                      className="w-full rounded-t-2xl bg-gradient-to-t from-emerald-300 via-lime-300 to-fuchsia-300 transition-all"
                       style={{ height: `${Math.max((point.minutes / chartMax) * 180, 10)}px` }}
                     />
                     <span className="text-[10px] text-white/45">{point.day.slice(8)}</span>
@@ -211,7 +212,7 @@ export default async function DashboardPage() {
                   {analytics.charts.heatmapHour.map((hour) => (
                     <div
                       key={hour.hour}
-                      className="flex aspect-square items-center justify-center rounded-xl border border-white/10 text-[11px] text-white/70"
+                      className="flex aspect-square items-center justify-center rounded-xl border border-white/10 text-[11px] text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
                       style={{ backgroundColor: `rgba(16, 185, 129, ${0.10 + (hour.minutes / hourMax) * 0.72})` }}
                       title={`${hour.hour}:00 - ${hour.minutes} min`}
                     >
@@ -226,7 +227,7 @@ export default async function DashboardPage() {
                   {analytics.charts.heatmapWeekday.map((day) => (
                     <div
                       key={day.day}
-                      className="flex flex-col items-center gap-2 rounded-xl border border-white/10 p-3 text-[11px] text-white/70"
+                      className="flex flex-col items-center gap-2 rounded-xl border border-white/10 p-3 text-[11px] text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
                       style={{ backgroundColor: `rgba(16, 185, 129, ${0.10 + (day.minutes / weekdayMax) * 0.72})` }}
                     >
                       <span>{day.day}</span>
@@ -253,7 +254,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-white/10">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-cyan-300"
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-lime-300 to-fuchsia-300"
                         style={{ width: `${Math.max((genre.percent / genreMax) * 100, 8)}%` }}
                       />
                     </div>
