@@ -8,6 +8,18 @@ export async function GET(request: Request) {
   const codeVerifier = createCodeVerifier();
   const codeChallenge = createCodeChallenge(codeVerifier);
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI?.trim();
+  const isProduction = process.env.NODE_ENV === "production";
+  const cookieOptions: {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: "none" | "lax" | "strict";
+    path: string;
+  } = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
+  };
 
   if (!redirectUri) {
     return NextResponse.json(
@@ -23,24 +35,15 @@ export async function GET(request: Request) {
 
   const response = NextResponse.redirect(url);
   response.cookies.set("soundlens_oauth_state", state, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
+    ...cookieOptions,
     maxAge: 60 * 10,
   });
   response.cookies.set("soundlens_pkce_verifier", codeVerifier, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
+    ...cookieOptions,
     maxAge: 60 * 10,
   });
   response.cookies.set("soundlens_spotify_redirect_uri", redirectUri, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
+    ...cookieOptions,
     maxAge: 60 * 10,
   });
 

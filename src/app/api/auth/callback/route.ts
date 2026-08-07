@@ -109,8 +109,20 @@ export async function GET(request: Request) {
   await recomputeAnalyticsSnapshot(user.id);
 
   const response = NextResponse.redirect(new URL("/dashboard", getAppOrigin(url)));
-  response.cookies.set("soundlens_oauth_state", "", { expires: new Date(0), path: "/" });
-  response.cookies.set("soundlens_pkce_verifier", "", { expires: new Date(0), path: "/" });
-  response.cookies.set("soundlens_spotify_redirect_uri", "", { expires: new Date(0), path: "/" });
+  const isProduction = process.env.NODE_ENV === "production";
+  const cookieOptions: {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: "none" | "lax" | "strict";
+    path: string;
+  } = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
+  };
+  response.cookies.set("soundlens_oauth_state", "", { ...cookieOptions, expires: new Date(0) });
+  response.cookies.set("soundlens_pkce_verifier", "", { ...cookieOptions, expires: new Date(0) });
+  response.cookies.set("soundlens_spotify_redirect_uri", "", { ...cookieOptions, expires: new Date(0) });
   return response;
 }

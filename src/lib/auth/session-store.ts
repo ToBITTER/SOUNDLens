@@ -18,13 +18,14 @@ export async function createSession(userId: string, ttlDays = 30) {
   });
 
   const cookieStore = await cookies();
+  const isProduction = process.env.NODE_ENV === "production";
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
     expires: expiresAt,
-  });
+  } as const);
 
   return { token, expiresAt };
 }
