@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { SpotifyProvider } from "@/lib/providers/spotify";
+import { getValidSpotifyAccessToken } from "./spotify-token.service";
 
 function minutes(ms: number) {
   return Math.round(ms / 60000);
@@ -20,7 +22,10 @@ export interface DashboardTopItem {
 }
 
 export async function buildDashboardSummary(userId: string) {
-  const [today, week, month, recentPlays, topTracks, topArtists, monthlyTrackHistory] = await Promise.all([
+  const accessToken = await getValidSpotifyAccessToken(userId);
+  const provider = new SpotifyProvider();
+
+  const [today, week, month, recentPlays, topTracks, topArtists, monthlyTrackHistory, liveTopTracks, liveTopArtists, currentPlayback, savedTracksCount] = await Promise.all([
     prisma.listeningHistory.aggregate({
       where: { userId, playedAt: { gte: startOfDay(new Date()) } },
       _sum: { playedDurationMs: true },
@@ -61,6 +66,10 @@ export async function buildDashboardSummary(userId: string) {
         track: true,
       },
     }),
+    provider.getTopItems?.(accessToken, "tracks", "medium_term", 10) ?? Promise.resolve([]),
+    provider.getTopItems?.(accessToken, "artists", "medium_term", 10) ?? Promise.resolve([]),
+    provider.getCurrentlyPlaying?.(accessToken) ?? Promise.resolve(null),
+    provider.getSavedTracksCount?.(accessToken) ?? Promise.resolve(0),
   ]);
 
   const monthlyTracks = monthlyTrackHistory.map((entry) => entry.track).filter(Boolean);
@@ -95,7 +104,7 @@ export async function buildDashboardSummary(userId: string) {
       averageListeningPerDay: minutes((month._sum.playedDurationMs ?? 0) / 30),
       listeningStreakDays: latestSession ? 1 : 0,
       currentListeningSessionMinutes: latestSession ? minutes(latestSession.durationMs) : 0,
-      musicDiscoveryCount: 0,
+      musicDiscoveryCount: savedTracksCount,
       newArtistsThisMonth: 0,
       averagePopularity:
         popularityValues.length > 0
@@ -119,12 +128,16 @@ export async function buildDashboardSummary(userId: string) {
       id: item.trackId ?? "",
       name: trackEntities.find((track) => track.id === item.trackId)?.name ?? "Unknown track",
       minutes: minutes(item._sum.playedDurationMs ?? 0),
-    })),
+    })).slice(0, 5),
     topArtists: topArtists.map<DashboardTopItem>((item) => ({
       id: item.artistId ?? "",
       name: artistEntities.find((artist) => artist.id === item.artistId)?.name ?? "Unknown artist",
       minutes: minutes(item._sum.playedDurationMs ?? 0),
-    })),
+    })).slice(0, 5),
+    liveTopTracks,
+    liveTopArtists,
+    currentPlayback,
+    savedTracksCount,
     latestSession,
   };
 }

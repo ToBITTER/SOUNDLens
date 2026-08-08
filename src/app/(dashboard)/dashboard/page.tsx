@@ -166,6 +166,8 @@ export default async function DashboardPage() {
                 <MetricPill label="Snapshot" value={analytics.latestSnapshot ? "Fresh" : "Waiting"} />
                 <MetricPill label="Connected" value={user.connectedSince.toLocaleDateString()} />
                 <MetricPill label="Plan" value={user.productType ?? "N/A"} />
+                <MetricPill label="Saved tracks" value={`${dashboard.savedTracksCount ?? 0}`} />
+                <MetricPill label="Now playing" value={dashboard.currentPlayback?.trackName ?? "Nothing"} />
               </div>
             </SectionShell>
 
@@ -277,6 +279,49 @@ export default async function DashboardPage() {
               <MetricPill label="Popularity" value={`${dashboard.metrics.averagePopularity}/100`} />
               <MetricPill label="Explicit %" value={`${dashboard.metrics.explicitPercent}%`} />
               <MetricPill label="Top artists" value={dashboard.metrics.topArtistName ?? "N/A"} />
+              <MetricPill label="Saved music" value={`${dashboard.metrics.musicDiscoveryCount}`} />
+            </div>
+          </SectionShell>
+        </section>
+
+        <section className="grid gap-6 xl:grid-cols-2">
+          <SectionShell
+            eyebrow="Spotify top"
+            title="Spotify's own rankings"
+            subtitle="These are pulled from Spotify directly, not inferred from our sync history."
+          >
+            <div className="space-y-3">
+              {(dashboard.liveTopTracks ?? []).length === 0 ? (
+                <p className="text-sm text-white/55">No live top tracks yet. Reconnect with `user-top-read` enabled.</p>
+              ) : (
+                dashboard.liveTopTracks.map((track: any, index: number) => (
+                  <div
+                    key={track.id || index}
+                    className="flex items-center justify-between rounded-[1.45rem] border border-white/8 bg-black/15 px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium text-white">{track.name}</p>
+                      <p className="text-sm text-white/50">{track.artistName ?? "Unknown artist"}</p>
+                    </div>
+                    <span className="text-sm text-white/70">Rank #{index + 1}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </SectionShell>
+
+          <SectionShell eyebrow="Playback" title="What’s happening right now" subtitle="If Spotify is playing, we can show it live.">
+            <div className="rounded-[1.6rem] border border-white/8 bg-black/15 p-5 text-sm text-white/70">
+              {dashboard.currentPlayback ? (
+                <>
+                  <p className="font-medium text-white">{dashboard.currentPlayback.trackName ?? "Unknown track"}</p>
+                  <p className="mt-2">Artist: {dashboard.currentPlayback.artistName ?? "N/A"}</p>
+                  <p className="mt-2">Album: {dashboard.currentPlayback.albumName ?? "N/A"}</p>
+                  <p className="mt-2">Status: {dashboard.currentPlayback.isPlaying ? "Playing" : "Paused"}</p>
+                </>
+              ) : (
+                <p>No active playback detected right now.</p>
+              )}
             </div>
           </SectionShell>
         </section>

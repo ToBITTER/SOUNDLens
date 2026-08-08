@@ -22,6 +22,31 @@ export interface MusicProvider {
   refreshAccessToken(refreshToken: string): Promise<OAuthTokenSet>;
   getProfile(accessToken: string): Promise<MusicProfile>;
   getRecentlyPlayed(accessToken: string, limit?: number): Promise<SpotifyRecentlyPlayedItem[]>;
+  getTopItems?(
+    accessToken: string,
+    type: "artists" | "tracks",
+    timeRange?: "short_term" | "medium_term" | "long_term",
+    limit?: number
+  ): Promise<Array<{
+    id: string;
+    name: string;
+    imageUrl?: string | null;
+    popularity?: number | null;
+    artistName?: string;
+    albumName?: string | null;
+    durationMs?: number;
+  }>>;
+  getCurrentlyPlaying?(
+    accessToken: string
+  ): Promise<{
+    isPlaying: boolean;
+    itemType: string | null;
+    trackName?: string | null;
+    artistName?: string | null;
+    albumName?: string | null;
+    progressMs?: number | null;
+    durationMs?: number | null;
+  } | null>;
   getCurrentUserPlaylists?(
     accessToken: string,
     limit?: number,
@@ -42,6 +67,7 @@ export interface MusicProvider {
     images?: { url: string }[];
     popularity?: number;
   }>>;
+  getSavedTracksCount?(accessToken: string): Promise<number>;
   search?(accessToken: string, query: string): Promise<MusicSearchResults>;
 }
 

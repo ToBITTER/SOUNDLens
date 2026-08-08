@@ -10,7 +10,10 @@ const SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_ME_URL = "https://api.spotify.com/v1/me";
 const SPOTIFY_RECENTLY_PLAYED_URL = "https://api.spotify.com/v1/me/player/recently-played";
+const SPOTIFY_CURRENTLY_PLAYING_URL = "https://api.spotify.com/v1/me/player/currently-playing";
 const SPOTIFY_PLAYLISTS_URL = "https://api.spotify.com/v1/me/playlists";
+const SPOTIFY_TOP_ITEMS_URL = "https://api.spotify.com/v1/me/top";
+const SPOTIFY_SAVED_TRACKS_URL = "https://api.spotify.com/v1/me/tracks";
 const SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search";
 
 export class SpotifyProvider implements MusicProvider {
@@ -22,7 +25,8 @@ export class SpotifyProvider implements MusicProvider {
       client_id: process.env.SPOTIFY_CLIENT_ID ?? "",
       response_type: "code",
       redirect_uri: resolvedRedirectUri,
-      scope: "user-read-private user-read-email user-read-recently-played playlist-read-private",
+      scope:
+        "user-read-private user-read-email user-read-recently-played playlist-read-private user-top-read user-read-playback-state user-library-read",
       state,
     });
 
@@ -214,6 +218,62 @@ export class SpotifyProvider implements MusicProvider {
     }));
   }
 
+  async getTopItems(accessToken: string, type: "artists" | "tracks", timeRange = "medium_term", limit = 10) {
+    const url = new URL(`${SPOTIFY_TOP_ITEMS_URL}/${type}`);
+    url.searchParams.set("time_range", timeRange);
+    url.searchParams.set("limit", String(limit));
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    if (type === "artists") {
+      return (data.items ?? []).map((artist: any) => ({
+        id: artist.id,
+        name: artist.name,
+        imageUrl: artist.images?.[0]?.url ?? null,
+        popularity: artist.popularity ?? null,
+      }));
+    }
+
+    return (data.items ?? []).map((track: any) => ({
+      id: track.id,
+      name: track.name,
+      imageUrl: track.album?.images?.[0]?.url ?? null,
+      popularity: track.popularity ?? null,
+      artistName: track.artists?.[0]?.name ?? "Unknown artist",
+      albumName: track.album?.name ?? null,
+      durationMs: track.duration_ms,
+    }));
+  }
+
+  async getCurrentlyPlaying(accessToken: string) {
+    const response = await fetch(SPOTIFY_CURRENTLY_PLAYING_URL, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (response.status === 204) return null;
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return {
+      isPlaying: Boolean(data.is_playing),
+      itemType: data.item?.type ?? null,
+      trackName: data.item?.name ?? null,
+      artistName: data.item?.artists?.[0]?.name ?? null,
+      albumName: data.item?.album?.name ?? null,
+      progressMs: data.progress_ms ?? null,
+      durationMs: data.item?.duration_ms ?? null,
+    };
+  }
+
   async getCurrentUserPlaylists(accessToken: string, limit = 50, offset = 0) {
     const url = new URL(SPOTIFY_PLAYLISTS_URL);
     url.searchParams.set("limit", String(limit));
@@ -238,6 +298,17 @@ export class SpotifyProvider implements MusicProvider {
       isPublic: playlist.public ?? false,
       tracksCount: playlist.tracks?.total ?? null,
     }));
+  }
+
+  async getSavedTracksCount(accessToken: string) {
+    const response = await fetch(`${SPOTIFY_SAVED_TRACKS_URL}?limit=1`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) return 0;
+    const data = await response.json();
+    return typeof data.total === "number" ? data.total : 0;
   }
 
   async getArtistsByIds(accessToken: string, artistIds: string[]) {
