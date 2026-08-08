@@ -30,8 +30,15 @@ function startOfYear(date: Date) {
   return next;
 }
 
+function startOfRollingYear(date: Date) {
+  const next = new Date(date);
+  next.setFullYear(next.getFullYear() - 1);
+  return next;
+}
+
 export async function buildAnalyticsOverview(userId: string) {
   const now = new Date();
+  const rollingYearStart = startOfRollingYear(now);
   const [daily, weekly, monthly, yearly, recentSnapshot] = await Promise.all([
     prisma.listeningHistory.aggregate({
       where: { userId, playedAt: { gte: startOfDay(now) } },
@@ -49,7 +56,7 @@ export async function buildAnalyticsOverview(userId: string) {
       _count: true,
     }),
     prisma.listeningHistory.aggregate({
-      where: { userId, playedAt: { gte: startOfYear(now) } },
+      where: { userId, playedAt: { gte: rollingYearStart } },
       _sum: { playedDurationMs: true },
       _count: true,
     }),
@@ -134,7 +141,7 @@ export async function buildAnalyticsOverview(userId: string) {
     minutes: minutes(weekdayBuckets[index]),
   }));
 
-  const daysInYear = Math.max(Math.ceil((now.getTime() - startOfYear(now).getTime()) / 86400000) + 1, 1);
+  const daysInYear = Math.max(Math.ceil((now.getTime() - rollingYearStart.getTime()) / 86400000) + 1, 1);
 
   return {
     current: {
