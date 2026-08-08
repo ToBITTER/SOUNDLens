@@ -35,6 +35,15 @@ export async function syncUserRecentlyPlayed(userId: string) {
   });
 
   const inserted: Array<{ playedAt: string; trackId: string }> = [];
+  const uniqueArtistIds = [...new Set(recentItems.flatMap((item) => (item.track.artists ?? []).map((artist) => artist.id)))];
+  const artistDetailsMap = new Map<string, { id: string; name: string; genres?: string[]; images?: { url: string }[]; popularity?: number }>();
+
+  if (uniqueArtistIds.length > 0) {
+    const artistDetails = await provider.getArtistsByIds?.(accessToken, uniqueArtistIds) ?? [];
+    for (const artist of artistDetails) {
+      artistDetailsMap.set(artist.id, artist);
+    }
+  }
 
   for (const item of recentItems) {
     const album = item.track.album
@@ -93,6 +102,7 @@ export async function syncUserRecentlyPlayed(userId: string) {
     let artistId: string | null = null;
 
     for (const artistItem of item.track.artists ?? []) {
+      const artistMeta = artistDetailsMap.get(artistItem.id) ?? artistItem;
       const artist = await prisma.artist.upsert({
         where: {
           providerId_providerArtistId: {
@@ -104,15 +114,15 @@ export async function syncUserRecentlyPlayed(userId: string) {
           providerId: providerRow.id,
           providerArtistId: artistItem.id,
           name: artistItem.name,
-          imageUrl: artistItem.images?.[0]?.url ?? null,
-          popularity: artistItem.popularity ?? null,
-          genresCached: artistItem.genres ?? [],
+          imageUrl: artistMeta.images?.[0]?.url ?? artistItem.images?.[0]?.url ?? null,
+          popularity: artistMeta.popularity ?? artistItem.popularity ?? null,
+          genresCached: artistMeta.genres ?? artistItem.genres ?? [],
         },
         update: {
           name: artistItem.name,
-          imageUrl: artistItem.images?.[0]?.url ?? null,
-          popularity: artistItem.popularity ?? null,
-          genresCached: artistItem.genres ?? [],
+          imageUrl: artistMeta.images?.[0]?.url ?? artistItem.images?.[0]?.url ?? null,
+          popularity: artistMeta.popularity ?? artistItem.popularity ?? null,
+          genresCached: artistMeta.genres ?? artistItem.genres ?? [],
         },
       });
 

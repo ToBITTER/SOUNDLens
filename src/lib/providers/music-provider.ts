@@ -22,6 +22,13 @@ export interface MusicProvider {
   refreshAccessToken(refreshToken: string): Promise<OAuthTokenSet>;
   getProfile(accessToken: string): Promise<MusicProfile>;
   getRecentlyPlayed(accessToken: string, limit?: number): Promise<SpotifyRecentlyPlayedItem[]>;
+  getArtistsByIds?(accessToken: string, artistIds: string[]): Promise<Array<{
+    id: string;
+    name: string;
+    genres?: string[];
+    images?: { url: string }[];
+    popularity?: number;
+  }>>;
   getCurrentUserPlaylists?(accessToken: string, limit?: number): Promise<unknown>;
   search?(accessToken: string, query: string): Promise<MusicSearchResults>;
 }

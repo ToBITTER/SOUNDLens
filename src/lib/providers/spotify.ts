@@ -168,6 +168,31 @@ export class SpotifyProvider implements MusicProvider {
     }));
   }
 
+  async getArtistsByIds(accessToken: string, artistIds: string[]) {
+    if (!artistIds.length) return [];
+
+    const url = new URL("https://api.spotify.com/v1/artists");
+    url.searchParams.set("ids", artistIds.slice(0, 50).join(","));
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    return (data.artists ?? []).map((artist: any) => ({
+      id: artist.id,
+      name: artist.name,
+      genres: Array.isArray(artist.genres) ? artist.genres : [],
+      images: artist.images,
+      popularity: artist.popularity,
+    }));
+  }
+
   async search(accessToken: string, query: string): Promise<MusicSearchResults> {
     const url = new URL(SPOTIFY_SEARCH_URL);
     url.searchParams.set("q", query);

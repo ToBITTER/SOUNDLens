@@ -39,7 +39,7 @@ function startOfRollingYear(date: Date) {
 export async function buildAnalyticsOverview(userId: string) {
   const now = new Date();
   const rollingYearStart = startOfRollingYear(now);
-  const [daily, weekly, monthly, yearly, recentSnapshot] = await Promise.all([
+  const [daily, weekly, monthly, yearly, recentSnapshot, yearRows] = await Promise.all([
     prisma.listeningHistory.aggregate({
       where: { userId, playedAt: { gte: startOfDay(now) } },
       _sum: { playedDurationMs: true },
@@ -63,6 +63,10 @@ export async function buildAnalyticsOverview(userId: string) {
     prisma.analyticsSnapshot.findFirst({
       where: { userId, periodType: "monthly" },
       orderBy: { periodStart: "desc" },
+    }),
+    prisma.listeningHistory.findMany({
+      where: { userId, playedAt: { gte: rollingYearStart } },
+      select: { playedAt: true, playedDurationMs: true },
     }),
   ]);
 
@@ -143,7 +147,13 @@ export async function buildAnalyticsOverview(userId: string) {
 
   const topDayEntry = [...dayTrend.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
   const topHourEntry = [...hourBuckets.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
-  const daysInYear = Math.max(Math.ceil((now.getTime() - rollingYearStart.getTime()) / 86400000) + 1, 1);
+  const activeYearDays = new Map<string, number>();
+  for (const row of yearRows) {
+    const dayKey = row.playedAt.toISOString().slice(0, 10);
+    activeYearDays.set(dayKey, (activeYearDays.get(dayKey) ?? 0) + row.playedDurationMs);
+  }
+  const totalYearMinutes = Math.round((yearly._sum.playedDurationMs ?? 0) / 60000);
+  const yearAverageMinutes = totalYearMinutes > 0 ? Math.round(totalYearMinutes / Math.max(activeYearDays.size, 1)) : 0;
 
   return {
     current: {
@@ -151,10 +161,7 @@ export async function buildAnalyticsOverview(userId: string) {
       weekListeningMinutes: minutes(weekly._sum.playedDurationMs ?? 0),
       monthListeningMinutes: minutes(monthly._sum.playedDurationMs ?? 0),
       yearListeningMinutes: minutes(yearly._sum.playedDurationMs ?? 0),
-      yearAverageMinutes: Math.max(
-        0,
-        Math.round((yearly._sum.playedDurationMs ?? 0) / 60000 / daysInYear)
-      ),
+      yearAverageMinutes,
       activeDay: topDayEntry ? new Date(topDayEntry[0]).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "N/A",
       activeHour: topHourEntry ? `${topHourEntry[0]}:00` : "N/A",
       todayPlays: daily._count,
