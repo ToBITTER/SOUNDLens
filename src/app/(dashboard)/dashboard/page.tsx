@@ -64,7 +64,7 @@ export default async function DashboardPage() {
     { label: "Today", value: formatMinutes(dashboard.metrics.todayListeningTimeMinutes) },
     { label: "This Week", value: formatMinutes(dashboard.metrics.weekListeningTimeMinutes) },
     { label: "This Month", value: formatMinutes(dashboard.metrics.monthListeningTimeMinutes) },
-    { label: "This Year", value: formatMinutes(analytics.current.yearListeningMinutes) },
+    { label: "Year avg", value: formatMinutes(analytics.current.yearAverageMinutes) },
   ];
 
   const insightBlocks = [

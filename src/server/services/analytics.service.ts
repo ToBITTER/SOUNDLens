@@ -134,12 +134,18 @@ export async function buildAnalyticsOverview(userId: string) {
     minutes: minutes(weekdayBuckets[index]),
   }));
 
+  const daysInYear = Math.max(Math.ceil((now.getTime() - startOfYear(now).getTime()) / 86400000) + 1, 1);
+
   return {
     current: {
       todayListeningMinutes: minutes(daily._sum.playedDurationMs ?? 0),
       weekListeningMinutes: minutes(weekly._sum.playedDurationMs ?? 0),
       monthListeningMinutes: minutes(monthly._sum.playedDurationMs ?? 0),
       yearListeningMinutes: minutes(yearly._sum.playedDurationMs ?? 0),
+      yearAverageMinutes: Math.max(
+        0,
+        Math.round((yearly._sum.playedDurationMs ?? 0) / 60000 / daysInYear)
+      ),
       todayPlays: daily._count,
       weekPlays: weekly._count,
       monthPlays: monthly._count,
