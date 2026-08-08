@@ -64,7 +64,6 @@ export default async function DashboardPage() {
     { label: "Today", value: formatMinutes(dashboard.metrics.todayListeningTimeMinutes) },
     { label: "This Week", value: formatMinutes(dashboard.metrics.weekListeningTimeMinutes) },
     { label: "This Month", value: formatMinutes(dashboard.metrics.monthListeningTimeMinutes) },
-    { label: "Year avg", value: formatMinutes(analytics.current.yearAverageMinutes) },
   ];
 
   const insightBlocks = [
@@ -251,7 +250,9 @@ export default async function DashboardPage() {
           >
             <div className="space-y-4">
               {analytics.charts.genreDistribution.length === 0 ? (
-                <p className="text-sm text-white/55">No genre data yet.</p>
+                <div className="rounded-[1.4rem] border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-white/55">
+                  No genre data yet. Sync a few listens and we’ll start mapping your sound.
+                </div>
               ) : (
                 analytics.charts.genreDistribution.map((genre) => (
                   <div key={genre.genre} className="space-y-2 rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
@@ -275,7 +276,6 @@ export default async function DashboardPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <MetricPill label="Popularity" value={`${dashboard.metrics.averagePopularity}/100`} />
               <MetricPill label="Explicit %" value={`${dashboard.metrics.explicitPercent}%`} />
-              <MetricPill label="Avg year" value={String(dashboard.metrics.averageReleaseYear || "N/A")} />
               <MetricPill label="Top artists" value={dashboard.metrics.topArtistName ?? "N/A"} />
             </div>
           </SectionShell>
