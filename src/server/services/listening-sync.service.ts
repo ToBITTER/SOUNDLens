@@ -92,30 +92,47 @@ export async function syncUserRecentlyPlayed(userId: string) {
     const primaryArtist = item.track.artists[0];
     let artistId: string | null = null;
 
-    if (primaryArtist) {
+    for (const artistItem of item.track.artists ?? []) {
       const artist = await prisma.artist.upsert({
         where: {
           providerId_providerArtistId: {
             providerId: providerRow.id,
-            providerArtistId: primaryArtist.id,
+            providerArtistId: artistItem.id,
           },
         },
         create: {
           providerId: providerRow.id,
-          providerArtistId: primaryArtist.id,
-          name: primaryArtist.name,
-          imageUrl: primaryArtist.images?.[0]?.url ?? null,
-          popularity: primaryArtist.popularity ?? null,
-          genresCached: primaryArtist.genres ?? [],
+          providerArtistId: artistItem.id,
+          name: artistItem.name,
+          imageUrl: artistItem.images?.[0]?.url ?? null,
+          popularity: artistItem.popularity ?? null,
+          genresCached: artistItem.genres ?? [],
         },
         update: {
-          name: primaryArtist.name,
-          imageUrl: primaryArtist.images?.[0]?.url ?? null,
-          popularity: primaryArtist.popularity ?? null,
-          genresCached: primaryArtist.genres ?? [],
+          name: artistItem.name,
+          imageUrl: artistItem.images?.[0]?.url ?? null,
+          popularity: artistItem.popularity ?? null,
+          genresCached: artistItem.genres ?? [],
         },
       });
-      artistId = artist.id;
+
+      await prisma.trackArtist.upsert({
+        where: {
+          trackId_artistId: {
+            trackId: track.id,
+            artistId: artist.id,
+          },
+        },
+        create: {
+          trackId: track.id,
+          artistId: artist.id,
+        },
+        update: {},
+      });
+
+      if (!artistId && artistItem.id === primaryArtist?.id) {
+        artistId = artist.id;
+      }
     }
 
     const playedAt = new Date(item.playedAt);

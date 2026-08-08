@@ -87,8 +87,18 @@ export async function buildAnalyticsOverview(userId: string) {
     const dayKey = row.playedAt.toISOString().slice(0, 10);
     dayTrend.set(dayKey, (dayTrend.get(dayKey) ?? 0) + playedMs);
 
-    const artists = row.track.trackArtists.map((trackArtist) => trackArtist.artist);
+    const artists = row.track.trackArtists?.map((trackArtist) => trackArtist.artist) ?? [];
+    if (artists.length === 0 && row.artistId) {
+      const directArtist = await prisma.artist.findUnique({
+        where: { id: row.artistId },
+      });
+      if (directArtist) {
+        artists.push(directArtist);
+      }
+    }
+
     for (const artist of artists) {
+      if (!artist) continue;
       artistBuckets.set(artist.name, (artistBuckets.get(artist.name) ?? 0) + playedMs);
       const genres = Array.isArray(artist.genresCached) ? artist.genresCached : [];
       for (const genre of genres) {
