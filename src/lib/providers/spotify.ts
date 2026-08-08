@@ -10,6 +10,7 @@ const SPOTIFY_AUTHORIZE_URL = "https://accounts.spotify.com/authorize";
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_ME_URL = "https://api.spotify.com/v1/me";
 const SPOTIFY_RECENTLY_PLAYED_URL = "https://api.spotify.com/v1/me/player/recently-played";
+const SPOTIFY_PLAYLISTS_URL = "https://api.spotify.com/v1/me/playlists";
 const SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search";
 
 export class SpotifyProvider implements MusicProvider {
@@ -165,6 +166,77 @@ export class SpotifyProvider implements MusicProvider {
           popularity: artist.popularity,
         })),
       },
+    }));
+  }
+
+  async getRecentlyPlayedPage(accessToken: string, limit = 50, before?: number): Promise<SpotifyRecentlyPlayedItem[]> {
+    const url = new URL(SPOTIFY_RECENTLY_PLAYED_URL);
+    url.searchParams.set("limit", String(limit));
+    if (before) {
+      url.searchParams.set("before", String(before));
+    }
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to load Spotify recently played tracks");
+    }
+
+    const data = await response.json();
+    return (data.items ?? []).map((item: any) => ({
+      playedAt: item.played_at,
+      track: {
+        id: item.track.id,
+        name: item.track.name,
+        duration_ms: item.track.duration_ms,
+        explicit: item.track.explicit,
+        popularity: item.track.popularity,
+        album: item.track.album
+          ? {
+              id: item.track.album.id,
+              name: item.track.album.name,
+              images: item.track.album.images,
+              release_date: item.track.album.release_date,
+              total_tracks: item.track.album.total_tracks,
+            }
+          : undefined,
+        artists: (item.track.artists ?? []).map((artist: any) => ({
+          id: artist.id,
+          name: artist.name,
+          genres: artist.genres,
+          images: artist.images,
+          popularity: artist.popularity,
+        })),
+      },
+    }));
+  }
+
+  async getCurrentUserPlaylists(accessToken: string, limit = 50, offset = 0) {
+    const url = new URL(SPOTIFY_PLAYLISTS_URL);
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", String(offset));
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to load Spotify playlists");
+    }
+
+    const data = await response.json();
+    return (data.items ?? []).map((playlist: any) => ({
+      id: playlist.id,
+      name: playlist.name,
+      description: playlist.description ?? null,
+      imageUrl: playlist.images?.[0]?.url ?? null,
+      ownerName: playlist.owner?.display_name ?? playlist.owner?.id ?? null,
+      isPublic: playlist.public ?? false,
+      tracksCount: playlist.tracks?.total ?? null,
     }));
   }
 

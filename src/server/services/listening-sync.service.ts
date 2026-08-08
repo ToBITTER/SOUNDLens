@@ -1,7 +1,28 @@
 import { prisma } from "@/lib/db";
 import { SpotifyProvider } from "@/lib/providers/spotify";
-import { decryptText } from "@/lib/auth/crypto";
 import { getValidSpotifyAccessToken } from "./spotify-token.service";
+
+async function fetchAllRecentlyPlayed(provider: SpotifyProvider, accessToken: string, pageSize = 50) {
+  const items = [];
+  let before: number | undefined;
+
+  for (let page = 0; page < 20; page += 1) {
+    const batch = await provider.getRecentlyPlayedPage(accessToken, pageSize, before);
+    if (batch.length === 0) break;
+
+    items.push(...batch);
+
+    const oldestPlayedAt = batch.reduce((min, item) => {
+      const playedAtMs = new Date(item.playedAt).getTime();
+      return Number.isFinite(playedAtMs) && playedAtMs < min ? playedAtMs : min;
+    }, Number.POSITIVE_INFINITY);
+
+    if (batch.length < pageSize || !Number.isFinite(oldestPlayedAt)) break;
+    before = oldestPlayedAt - 1;
+  }
+
+  return items;
+}
 
 function startOfDay(date: Date) {
   const next = new Date(date);
@@ -26,7 +47,7 @@ function startOfMonth(date: Date) {
 export async function syncUserRecentlyPlayed(userId: string) {
   const accessToken = await getValidSpotifyAccessToken(userId);
   const provider = new SpotifyProvider();
-  const recentItems = await provider.getRecentlyPlayed(accessToken, 50);
+  const recentItems = await fetchAllRecentlyPlayed(provider, accessToken);
 
   const providerRow = await prisma.provider.upsert({
     where: { key: "spotify" },
@@ -146,14 +167,6 @@ export async function syncUserRecentlyPlayed(userId: string) {
     }
 
     const playedAt = new Date(item.playedAt);
-    const dedupeKey = {
-      userId_trackId_playedAt: {
-        userId,
-        trackId: track.id,
-        playedAt,
-      },
-    };
-
     const existing = await prisma.listeningHistory.findFirst({
       where: {
         userId,
@@ -181,20 +194,61 @@ export async function syncUserRecentlyPlayed(userId: string) {
     inserted.push({ playedAt: item.playedAt, trackId: track.id });
   }
 
+  if (provider.getCurrentUserPlaylists) {
+    let offset = 0;
+    const pageSize = 50;
+    for (let page = 0; page < 10; page += 1) {
+      const playlists = await provider.getCurrentUserPlaylists(accessToken, pageSize, offset);
+      if (playlists.length === 0) break;
+
+      for (const playlist of playlists) {
+        await prisma.playlist.upsert({
+          where: {
+            providerId_providerPlaylistId: {
+              providerId: providerRow.id,
+              providerPlaylistId: playlist.id,
+            },
+          },
+          create: {
+            providerId: providerRow.id,
+            providerPlaylistId: playlist.id,
+            userId,
+            name: playlist.name,
+            description: playlist.description ?? null,
+            imageUrl: playlist.imageUrl ?? null,
+            ownerName: playlist.ownerName ?? null,
+            isPublic: playlist.isPublic ?? false,
+            tracksCount: playlist.tracksCount ?? null,
+          },
+          update: {
+            userId,
+            name: playlist.name,
+            description: playlist.description ?? null,
+            imageUrl: playlist.imageUrl ?? null,
+            ownerName: playlist.ownerName ?? null,
+            isPublic: playlist.isPublic ?? false,
+            tracksCount: playlist.tracksCount ?? null,
+          },
+        });
+      }
+
+      if (playlists.length < pageSize) break;
+      offset += pageSize;
+    }
+  }
+
   const now = new Date();
-  await prisma.listeningSession.createMany({
-    data: [
-      {
-        userId,
-        startedAt: startOfDay(now),
-        endedAt: now,
-        durationMs: 0,
-        trackCount: inserted.length,
-        dayBucket: startOfDay(now),
-        weekBucket: startOfWeek(now),
-        monthBucket: startOfMonth(now),
-      },
-    ],
+  await prisma.listeningSession.create({
+    data: {
+      userId,
+      startedAt: startOfDay(now),
+      endedAt: now,
+      durationMs: 0,
+      trackCount: inserted.length,
+      dayBucket: startOfDay(now),
+      weekBucket: startOfWeek(now),
+      monthBucket: startOfMonth(now),
+    },
   });
 
   return { insertedCount: inserted.length };
