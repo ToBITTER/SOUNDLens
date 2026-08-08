@@ -333,6 +333,13 @@ export default async function DashboardPage() {
             title="Your actual playlist stack"
             subtitle="Real playlist contents, not a fake vibe label."
           >
+            <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <MetricPill label="Synced playlists" value={`${dashboard.playlists?.length ?? 0}`} />
+              <MetricPill label="Total tracks" value={`${dashboard.playlists?.reduce((sum, playlist) => sum + playlist.tracksCount, 0) ?? 0}`} />
+              <MetricPill label="Total time" value={formatMinutes(dashboard.playlists?.reduce((sum, playlist) => sum + playlist.totalMinutes, 0) ?? 0)} />
+              <MetricPill label="Explicit avg" value={`${Math.round((dashboard.playlists?.reduce((sum, playlist) => sum + playlist.explicitPercent, 0) ?? 0) / Math.max(dashboard.playlists?.length ?? 1, 1))}%`} />
+            </div>
+
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {(dashboard.playlists ?? []).length === 0 ? (
                 <p className="text-sm text-white/55">No playlists synced yet. Run sync so we can read the real playlist contents.</p>
@@ -342,8 +349,9 @@ export default async function DashboardPage() {
                     key={playlist.id}
                     className="rounded-[1.45rem] border border-white/8 bg-black/15 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]"
                   >
-                    <p className="font-medium text-white">{playlist.name}</p>
-                    <p className="mt-1 text-sm text-white/55 line-clamp-2">{playlist.description ?? "No description"}</p>
+                    <p className="text-lg font-semibold text-white">{playlist.name}</p>
+                    <p className="mt-1 text-sm text-white/55">{playlist.description ?? "No description"}</p>
+                    <p className="mt-3 text-sm text-emerald-300">{playlist.tracksCount} tracks</p>
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/65">
                       <div className="rounded-xl border border-white/8 bg-white/[0.03] p-2">
                         <p className="uppercase tracking-[0.24em] text-white/40">Tracks</p>
@@ -358,6 +366,12 @@ export default async function DashboardPage() {
                         <p className="mt-1 text-base text-white">{playlist.explicitPercent}%</p>
                       </div>
                     </div>
+                    {playlist.imageUrl ? (
+                      <div
+                        className="mt-4 h-36 rounded-[1.2rem] bg-cover bg-center"
+                        style={{ backgroundImage: `url(${playlist.imageUrl})` }}
+                      />
+                    ) : null}
                   </div>
                 ))
               )}
