@@ -6,6 +6,28 @@ import { encryptText } from "@/lib/auth/crypto";
 import { createSession } from "@/lib/auth/session-store";
 import { syncUserRecentlyPlayed } from "@/server/services/listening-sync.service";
 import { recomputeAnalyticsSnapshot } from "@/server/services/analytics.service";
+import crypto from "crypto";
+
+function verifyState(rawState: string) {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET is not configured");
+
+  const [body, signature] = rawState.split(".");
+  if (!body || !signature) return null;
+
+  const expected = crypto.createHmac("sha256", secret).update(body).digest("base64url");
+  if (expected !== signature) return null;
+
+  try {
+    return JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as {
+      nonce: string;
+      codeVerifier: string;
+      redirectUri: string;
+    };
+  } catch {
+    return null;
+  }
+}
 
 function getAppOrigin(url: URL) {
   return (
@@ -33,13 +55,23 @@ export async function GET(request: Request) {
   const storedState = cookieStore.get("soundlens_oauth_state")?.value;
   const codeVerifier = cookieStore.get("soundlens_pkce_verifier")?.value;
   const redirectUri = cookieStore.get("soundlens_spotify_redirect_uri")?.value;
+  const parsedState = verifyState(state);
 
   if (!storedState || storedState !== state) {
+    if (!parsedState) {
+      return NextResponse.json({ ok: false, error: "Invalid OAuth state" }, { status: 400 });
+    }
+  }
+
+  const resolvedCodeVerifier = parsedState?.codeVerifier ?? codeVerifier;
+  const resolvedRedirectUri = parsedState?.redirectUri ?? redirectUri;
+
+  if (!resolvedCodeVerifier || !resolvedRedirectUri) {
     return NextResponse.json({ ok: false, error: "Invalid OAuth state" }, { status: 400 });
   }
 
   const provider = new SpotifyProvider();
-  const tokenSet = await provider.exchangeCode(code, codeVerifier, redirectUri);
+  const tokenSet = await provider.exchangeCode(code, resolvedCodeVerifier, resolvedRedirectUri);
   const profile = await provider.getProfile(tokenSet.accessToken);
 
   const providerRow = await prisma.provider.upsert({
