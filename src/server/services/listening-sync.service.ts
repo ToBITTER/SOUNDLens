@@ -2,8 +2,10 @@ import { prisma } from "@/lib/db";
 import { SpotifyProvider } from "@/lib/providers/spotify";
 import { getValidSpotifyAccessToken } from "./spotify-token.service";
 
+type PlaylistTrackItem = NonNullable<Awaited<ReturnType<SpotifyProvider["getPlaylistItems"]>>>[number];
+
 async function fetchAllRecentlyPlayed(provider: SpotifyProvider, accessToken: string, pageSize = 50) {
-  const items = [];
+  const items: Awaited<ReturnType<SpotifyProvider["getRecentlyPlayedPage"]>> = [];
   let before: number | undefined;
 
   for (let page = 0; page < 20; page += 1) {
@@ -24,9 +26,18 @@ async function fetchAllRecentlyPlayed(provider: SpotifyProvider, accessToken: st
   return items;
 }
 
-async function syncPlaylistTracks(userId: string, providerRowId: string, playlistId: string, playlistTracks: Awaited<ReturnType<SpotifyProvider["getPlaylistItems"]>>) {
+async function syncPlaylistTracks(
+  userId: string,
+  providerRowId: string,
+  playlistId: string,
+  playlistTracks: Awaited<ReturnType<SpotifyProvider["getPlaylistItems"]>>
+) {
   const provider = new SpotifyProvider();
-  const uniqueArtistIds = [...new Set((playlistTracks ?? []).flatMap((item) => item.artists.map((artist) => artist.id)))];
+  const uniqueArtistIds = [
+    ...new Set(
+      (playlistTracks ?? []).flatMap((item: PlaylistTrackItem) => item.artists.map((artist: PlaylistTrackItem["artists"][number]) => artist.id))
+    ),
+  ] as string[];
   const artistDetailsMap = new Map<string, { id: string; name: string; genres?: string[]; images?: { url: string }[]; popularity?: number }>();
 
   if (uniqueArtistIds.length > 0) {
