@@ -141,6 +141,8 @@ export async function buildAnalyticsOverview(userId: string) {
     minutes: minutes(weekdayBuckets[index]),
   }));
 
+  const topDayEntry = [...dayTrend.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
+  const topHourEntry = [...hourBuckets.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
   const daysInYear = Math.max(Math.ceil((now.getTime() - rollingYearStart.getTime()) / 86400000) + 1, 1);
 
   return {
@@ -153,6 +155,8 @@ export async function buildAnalyticsOverview(userId: string) {
         0,
         Math.round((yearly._sum.playedDurationMs ?? 0) / 60000 / daysInYear)
       ),
+      activeDay: topDayEntry ? new Date(topDayEntry[0]).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "N/A",
+      activeHour: topHourEntry ? `${topHourEntry[0]}:00` : "N/A",
       todayPlays: daily._count,
       weekPlays: weekly._count,
       monthPlays: monthly._count,

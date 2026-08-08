@@ -163,10 +163,7 @@ export default async function DashboardPage() {
           <div className="grid gap-6">
             <SectionShell eyebrow="Mood check" title="Tiny truths">
               <div className="grid gap-3 sm:grid-cols-2">
-                <MetricPill
-                  label="Most active hour"
-                  value={String((analytics.latestSnapshot?.metricsJson as Record<string, unknown> | undefined)?.activeHour ?? "N/A")}
-                />
+                <MetricPill label="Most active hour" value={analytics.current.activeHour ?? "N/A"} />
                 <MetricPill label="Snapshot" value={analytics.latestSnapshot ? "Fresh" : "Waiting"} />
                 <MetricPill label="Connected" value={user.connectedSince.toLocaleDateString()} />
                 <MetricPill label="Plan" value={user.productType ?? "N/A"} />
@@ -334,12 +331,7 @@ export default async function DashboardPage() {
               <p className="font-medium text-white">Top artist: {dashboard.topArtists[0]?.name ?? "N/A"}</p>
               <p className="mt-2">Top song: {dashboard.topTracks[0]?.name ?? "N/A"}</p>
               <p className="mt-2">Hours listened this month: {formatMinutes(dashboard.metrics.monthListeningTimeMinutes)}</p>
-              <p className="mt-2">
-                Most active day:{" "}
-                {analytics.latestSnapshot?.metricsJson && typeof analytics.latestSnapshot.metricsJson === "object"
-                  ? String((analytics.latestSnapshot.metricsJson as Record<string, unknown>).activeDay ?? "N/A")
-                  : "N/A"}
-              </p>
+              <p className="mt-2">Most active day: {analytics.current.activeDay ?? "N/A"}</p>
             </div>
           </SectionShell>
 
