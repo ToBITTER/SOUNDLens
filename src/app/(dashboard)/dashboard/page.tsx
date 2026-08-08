@@ -335,9 +335,18 @@ export default async function DashboardPage() {
           >
             <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <MetricPill label="Synced playlists" value={`${dashboard.playlists?.length ?? 0}`} />
-              <MetricPill label="Total tracks" value={`${dashboard.playlists?.reduce((sum, playlist) => sum + playlist.tracksCount, 0) ?? 0}`} />
-              <MetricPill label="Total time" value={formatMinutes(dashboard.playlists?.reduce((sum, playlist) => sum + playlist.totalMinutes, 0) ?? 0)} />
-              <MetricPill label="Explicit avg" value={`${Math.round((dashboard.playlists?.reduce((sum, playlist) => sum + playlist.explicitPercent, 0) ?? 0) / Math.max(dashboard.playlists?.length ?? 1, 1))}%`} />
+              <MetricPill
+                label="Total tracks"
+                value={`${dashboard.playlists?.reduce((sum, playlist) => sum + (playlist.tracksCount || playlist.trackRowsCount), 0) ?? 0}`}
+              />
+              <MetricPill
+                label="Total time"
+                value={formatMinutes(dashboard.playlists?.reduce((sum, playlist) => sum + playlist.totalMinutes, 0) ?? 0)}
+              />
+              <MetricPill
+                label="Explicit avg"
+                value={`${Math.round((dashboard.playlists?.reduce((sum, playlist) => sum + playlist.explicitPercent, 0) ?? 0) / Math.max(dashboard.playlists?.length ?? 1, 1))}%`}
+              />
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -351,15 +360,15 @@ export default async function DashboardPage() {
                   >
                     <p className="text-lg font-semibold text-white">{playlist.name}</p>
                     <p className="mt-1 text-sm text-white/55">{playlist.description ?? "No description"}</p>
-                    <p className="mt-3 text-sm text-emerald-300">{playlist.tracksCount} tracks</p>
+                    <p className="mt-3 text-sm text-emerald-300">{playlist.tracksCount || playlist.trackRowsCount} tracks</p>
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/65">
                       <div className="rounded-xl border border-white/8 bg-white/[0.03] p-2">
                         <p className="uppercase tracking-[0.24em] text-white/40">Tracks</p>
-                        <p className="mt-1 text-base text-white">{playlist.tracksCount}</p>
+                        <p className="mt-1 text-base text-white">{playlist.tracksCount || playlist.trackRowsCount}</p>
                       </div>
                       <div className="rounded-xl border border-white/8 bg-white/[0.03] p-2">
                         <p className="uppercase tracking-[0.24em] text-white/40">Length</p>
-                        <p className="mt-1 text-base text-white">{formatMinutes(playlist.totalMinutes)}</p>
+                        <p className="mt-1 text-base text-white">{playlist.totalMinutes > 0 ? formatMinutes(playlist.totalMinutes) : "Syncing"}</p>
                       </div>
                       <div className="rounded-xl border border-white/8 bg-white/[0.03] p-2">
                         <p className="uppercase tracking-[0.24em] text-white/40">Explicit</p>

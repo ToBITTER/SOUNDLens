@@ -29,6 +29,7 @@ export interface PlaylistSummaryItem {
   tracksCount: number;
   totalMinutes: number;
   explicitPercent: number;
+  trackRowsCount: number;
 }
 
 export async function buildDashboardSummary(userId: string) {
@@ -170,6 +171,7 @@ export async function buildDashboardSummary(userId: string) {
         tracksCount: playlist.tracksCount ?? trackRows.length,
         totalMinutes,
         explicitPercent,
+        trackRowsCount: trackRows.length,
       };
     }),
     latestSession,
