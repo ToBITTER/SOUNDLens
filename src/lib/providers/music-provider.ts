@@ -60,6 +60,32 @@ export interface MusicProvider {
     isPublic?: boolean;
     tracksCount?: number | null;
   }>>;
+  getPlaylistItems?(
+    accessToken: string,
+    playlistId: string,
+    limit?: number,
+    offset?: number
+  ): Promise<Array<{
+    trackId: string;
+    trackName: string;
+    durationMs: number;
+    explicit: boolean;
+    popularity?: number | null;
+    album?: {
+      id: string;
+      name: string;
+      imageUrl?: string | null;
+      releaseDate?: string | null;
+      totalTracks?: number | null;
+    } | null;
+    artists: Array<{
+      id: string;
+      name: string;
+      genres?: string[];
+      imageUrl?: string | null;
+      popularity?: number | null;
+    }>;
+  }>>;
   getArtistsByIds?(accessToken: string, artistIds: string[]): Promise<Array<{
     id: string;
     name: string;

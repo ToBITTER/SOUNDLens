@@ -12,6 +12,7 @@ const SPOTIFY_ME_URL = "https://api.spotify.com/v1/me";
 const SPOTIFY_RECENTLY_PLAYED_URL = "https://api.spotify.com/v1/me/player/recently-played";
 const SPOTIFY_CURRENTLY_PLAYING_URL = "https://api.spotify.com/v1/me/player/currently-playing";
 const SPOTIFY_PLAYLISTS_URL = "https://api.spotify.com/v1/me/playlists";
+const SPOTIFY_PLAYLIST_ITEMS_URL = "https://api.spotify.com/v1/playlists";
 const SPOTIFY_TOP_ITEMS_URL = "https://api.spotify.com/v1/me/top";
 const SPOTIFY_SAVED_TRACKS_URL = "https://api.spotify.com/v1/me/tracks";
 const SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search";
@@ -298,6 +299,50 @@ export class SpotifyProvider implements MusicProvider {
       isPublic: playlist.public ?? false,
       tracksCount: playlist.tracks?.total ?? null,
     }));
+  }
+
+  async getPlaylistItems(accessToken: string, playlistId: string, limit = 100, offset = 0) {
+    const url = new URL(`${SPOTIFY_PLAYLIST_ITEMS_URL}/${playlistId}/tracks`);
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", String(offset));
+    url.searchParams.set("fields", "items(track(id,name,duration_ms,explicit,popularity,album(id,name,images,release_date,total_tracks),artists(id,name,genres,images,popularity))),next,total");
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+    return (data.items ?? [])
+      .map((item: any) => item.track)
+      .filter(Boolean)
+      .map((track: any) => ({
+        trackId: track.id,
+        trackName: track.name,
+        durationMs: track.duration_ms,
+        explicit: track.explicit,
+        popularity: track.popularity ?? null,
+        album: track.album
+          ? {
+              id: track.album.id,
+              name: track.album.name,
+              imageUrl: track.album.images?.[0]?.url ?? null,
+              releaseDate: track.album.release_date ?? null,
+              totalTracks: track.album.total_tracks ?? null,
+            }
+          : null,
+        artists: (track.artists ?? []).map((artist: any) => ({
+          id: artist.id,
+          name: artist.name,
+          genres: artist.genres ?? [],
+          imageUrl: artist.images?.[0]?.url ?? null,
+          popularity: artist.popularity ?? null,
+        })),
+      }));
   }
 
   async getSavedTracksCount(accessToken: string) {

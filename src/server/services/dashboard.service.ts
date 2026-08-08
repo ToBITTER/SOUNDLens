@@ -21,11 +21,21 @@ export interface DashboardTopItem {
   minutes: number;
 }
 
+export interface PlaylistSummaryItem {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  tracksCount: number;
+  totalMinutes: number;
+  explicitPercent: number;
+}
+
 export async function buildDashboardSummary(userId: string) {
   const accessToken = await getValidSpotifyAccessToken(userId);
   const provider = new SpotifyProvider();
 
-  const [today, week, month, recentPlays, topTracks, topArtists, monthlyTrackHistory, liveTopTracks, liveTopArtists, currentPlayback, savedTracksCount] = await Promise.all([
+  const [today, week, month, recentPlays, topTracks, topArtists, monthlyTrackHistory, liveTopTracks, liveTopArtists, currentPlayback, savedTracksCount, playlists] = await Promise.all([
     prisma.listeningHistory.aggregate({
       where: { userId, playedAt: { gte: startOfDay(new Date()) } },
       _sum: { playedDurationMs: true },
@@ -70,6 +80,16 @@ export async function buildDashboardSummary(userId: string) {
     provider.getTopItems?.(accessToken, "artists", "medium_term", 10) ?? Promise.resolve([]),
     provider.getCurrentlyPlaying?.(accessToken) ?? Promise.resolve(null),
     provider.getSavedTracksCount?.(accessToken) ?? Promise.resolve(0),
+    prisma.playlist.findMany({
+      where: { OR: [{ userId }, { userId: null }] },
+      include: {
+        playlistTracks: {
+          include: { track: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    }),
   ]);
 
   const monthlyTracks = monthlyTrackHistory.map((entry) => entry.track).filter(Boolean);
@@ -138,6 +158,20 @@ export async function buildDashboardSummary(userId: string) {
     liveTopArtists,
     currentPlayback,
     savedTracksCount,
+    playlists: playlists.map<PlaylistSummaryItem>((playlist) => {
+      const trackRows = playlist.playlistTracks ?? [];
+      const totalMinutes = minutes(trackRows.reduce((sum, row) => sum + row.track.durationMs, 0));
+      const explicitPercent = trackRows.length > 0 ? Math.round((trackRows.filter((row) => row.track.explicit).length / trackRows.length) * 100) : 0;
+      return {
+        id: playlist.id,
+        name: playlist.name,
+        description: playlist.description,
+        imageUrl: playlist.imageUrl,
+        tracksCount: playlist.tracksCount ?? trackRows.length,
+        totalMinutes,
+        explicitPercent,
+      };
+    }),
     latestSession,
   };
 }

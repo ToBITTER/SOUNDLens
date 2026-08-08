@@ -24,6 +24,133 @@ async function fetchAllRecentlyPlayed(provider: SpotifyProvider, accessToken: st
   return items;
 }
 
+async function syncPlaylistTracks(userId: string, providerRowId: string, playlistId: string, playlistTracks: Awaited<ReturnType<SpotifyProvider["getPlaylistItems"]>>) {
+  const provider = new SpotifyProvider();
+  const uniqueArtistIds = [...new Set((playlistTracks ?? []).flatMap((item) => item.artists.map((artist) => artist.id)))];
+  const artistDetailsMap = new Map<string, { id: string; name: string; genres?: string[]; images?: { url: string }[]; popularity?: number }>();
+
+  if (uniqueArtistIds.length > 0) {
+    const accessToken = await getValidSpotifyAccessToken(userId);
+    const artistDetails = await provider.getArtistsByIds?.(accessToken, uniqueArtistIds) ?? [];
+    for (const artist of artistDetails) {
+      artistDetailsMap.set(artist.id, artist);
+    }
+  }
+
+  const playlist = await prisma.playlist.findFirst({
+    where: { id: playlistId },
+  });
+  if (!playlist) return;
+
+  await prisma.playlistTrack.deleteMany({ where: { playlistId } });
+
+  for (const item of playlistTracks ?? []) {
+    const album = item.album
+      ? await prisma.album.upsert({
+          where: {
+            providerId_providerAlbumId: {
+              providerId: providerRowId,
+              providerAlbumId: item.album.id,
+            },
+          },
+          create: {
+            providerId: providerRowId,
+            providerAlbumId: item.album.id,
+            name: item.album.name,
+            imageUrl: item.album.imageUrl ?? null,
+            releaseDate: item.album.releaseDate ? new Date(item.album.releaseDate) : null,
+            totalTracks: item.album.totalTracks ?? null,
+          },
+          update: {
+            name: item.album.name,
+            imageUrl: item.album.imageUrl ?? null,
+            releaseDate: item.album.releaseDate ? new Date(item.album.releaseDate) : null,
+            totalTracks: item.album.totalTracks ?? null,
+          },
+        })
+      : null;
+
+    const track = await prisma.track.upsert({
+      where: {
+        providerId_providerTrackId: {
+          providerId: providerRowId,
+          providerTrackId: item.trackId,
+        },
+      },
+      create: {
+        providerId: providerRowId,
+        providerTrackId: item.trackId,
+        name: item.trackName,
+        durationMs: item.durationMs,
+        explicit: item.explicit,
+        popularity: item.popularity ?? null,
+        albumId: album?.id ?? null,
+      },
+      update: {
+        name: item.trackName,
+        durationMs: item.durationMs,
+        explicit: item.explicit,
+        popularity: item.popularity ?? null,
+        albumId: album?.id ?? null,
+      },
+    });
+
+    for (const artistItem of item.artists) {
+      const artistMeta = artistDetailsMap.get(artistItem.id) ?? artistItem;
+      const artist = await prisma.artist.upsert({
+        where: {
+          providerId_providerArtistId: {
+            providerId: providerRowId,
+            providerArtistId: artistItem.id,
+          },
+        },
+        create: {
+          providerId: providerRowId,
+          providerArtistId: artistItem.id,
+          name: artistItem.name,
+          imageUrl: artistMeta.images?.[0]?.url ?? artistItem.imageUrl ?? null,
+          popularity: artistMeta.popularity ?? artistItem.popularity ?? null,
+          genresCached: artistMeta.genres ?? artistItem.genres ?? [],
+        },
+        update: {
+          name: artistItem.name,
+          imageUrl: artistMeta.images?.[0]?.url ?? artistItem.imageUrl ?? null,
+          popularity: artistMeta.popularity ?? artistItem.popularity ?? null,
+          genresCached: artistMeta.genres ?? artistItem.genres ?? [],
+        },
+      });
+
+      await prisma.trackArtist.upsert({
+        where: {
+          trackId_artistId: {
+            trackId: track.id,
+            artistId: artist.id,
+          },
+        },
+        create: {
+          trackId: track.id,
+          artistId: artist.id,
+        },
+        update: {},
+      });
+    }
+
+    await prisma.playlistTrack.upsert({
+      where: {
+        playlistId_trackId: {
+          playlistId,
+          trackId: track.id,
+        },
+      },
+      create: {
+        playlistId,
+        trackId: track.id,
+      },
+      update: {},
+    });
+  }
+}
+
 function startOfDay(date: Date) {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
@@ -202,7 +329,7 @@ export async function syncUserRecentlyPlayed(userId: string) {
       if (playlists.length === 0) break;
 
       for (const playlist of playlists) {
-        await prisma.playlist.upsert({
+        const playlistRecord = await prisma.playlist.upsert({
           where: {
             providerId_providerPlaylistId: {
               providerId: providerRow.id,
@@ -230,6 +357,23 @@ export async function syncUserRecentlyPlayed(userId: string) {
             tracksCount: playlist.tracksCount ?? null,
           },
         });
+
+        if (provider.getPlaylistItems) {
+          const accessTokenForTracks = accessToken;
+          let trackOffset = 0;
+          const trackPageSize = 100;
+          const collected: NonNullable<Awaited<ReturnType<SpotifyProvider["getPlaylistItems"]>>> = [];
+
+          for (let trackPage = 0; trackPage < 20; trackPage += 1) {
+            const tracks = await provider.getPlaylistItems(accessTokenForTracks, playlist.id, trackPageSize, trackOffset);
+            if (tracks.length === 0) break;
+            collected.push(...tracks);
+            if (tracks.length < trackPageSize) break;
+            trackOffset += trackPageSize;
+          }
+
+          await syncPlaylistTracks(userId, providerRow.id, playlistRecord.id, collected);
+        }
       }
 
       if (playlists.length < pageSize) break;
