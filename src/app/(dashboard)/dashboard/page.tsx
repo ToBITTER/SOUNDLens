@@ -72,6 +72,7 @@ export default async function DashboardPage() {
     { label: "Daily avg", value: formatMinutes(dashboard.metrics.averageListeningPerDay) },
     { label: "Discovery", value: `${dashboard.metrics.musicDiscoveryCount}` },
   ];
+  const topArtistName = dashboard.topArtists[0]?.name ?? dashboard.metrics.topArtistName ?? "N/A";
 
   const chartMax = Math.max(...analytics.charts.listeningTrend.map((item) => item.minutes), 1);
   const hourMax = Math.max(...analytics.charts.heatmapHour.map((item) => item.minutes), 1);
@@ -92,7 +93,7 @@ export default async function DashboardPage() {
                 Hey {user.displayName}, your music is already telling on you.
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
-                Quick pulse on your listening, tiny bragging rights, and the occasional reminder that Burna Boy
+                Quick pulse on your listening, tiny bragging rights, and the occasional reminder that {topArtistName}
                 might be winning the month again.
               </p>
             </div>
