@@ -105,17 +105,20 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {cards.map((card) => (
-              <MetricPill key={card.label} label={card.label} value={card.value} />
+            {cards.map((card, index) => (
+              <div key={card.label} className="animate-[float_7s_ease-in-out_infinite]" style={{ animationDelay: `${index * 180}ms` }}>
+                <MetricPill label={card.label} value={card.value} />
+              </div>
             ))}
           </div>
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {insightBlocks.map((item) => (
+          {insightBlocks.map((item, index) => (
             <div
               key={item.label}
-              className="rounded-[1.8rem] border border-emerald-300/12 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.75))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
+              className="rounded-[1.8rem] border border-emerald-300/12 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.75))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/25 animate-[fadeUp_0.5s_ease-out_forwards]"
+              style={{ animationDelay: `${index * 120}ms` }}
             >
               <p className="text-[11px] uppercase tracking-[0.32em] text-emerald-200/75">{item.label}</p>
               <p className="mt-3 text-2xl font-semibold text-white">{item.value}</p>
@@ -273,10 +276,10 @@ export default async function DashboardPage() {
 
           <SectionShell eyebrow="Playlist vibe" title="What your playlists are saying">
             <div className="grid gap-3 sm:grid-cols-2">
-              <MetricPill label="Popularity" value="Coming soon" />
-              <MetricPill label="Explicit %" value="Coming soon" />
-              <MetricPill label="Avg year" value="Coming soon" />
-              <MetricPill label="Top artists" value="Coming soon" />
+              <MetricPill label="Popularity" value={`${dashboard.metrics.averagePopularity}/100`} />
+              <MetricPill label="Explicit %" value={`${dashboard.metrics.explicitPercent}%`} />
+              <MetricPill label="Avg year" value={String(dashboard.metrics.averageReleaseYear || "N/A")} />
+              <MetricPill label="Top artists" value={dashboard.metrics.topArtistName ?? "N/A"} />
             </div>
           </SectionShell>
         </section>

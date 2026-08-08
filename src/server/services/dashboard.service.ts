@@ -20,7 +20,7 @@ export interface DashboardTopItem {
 }
 
 export async function buildDashboardSummary(userId: string) {
-  const [today, week, month, recentPlays, topTracks, topArtists] = await Promise.all([
+  const [today, week, month, recentPlays, topTracks, topArtists, monthlyTrackHistory] = await Promise.all([
     prisma.listeningHistory.aggregate({
       where: { userId, playedAt: { gte: startOfDay(new Date()) } },
       _sum: { playedDurationMs: true },
@@ -55,7 +55,22 @@ export async function buildDashboardSummary(userId: string) {
       orderBy: { _sum: { playedDurationMs: "desc" } },
       take: 5,
     }),
+    prisma.listeningHistory.findMany({
+      where: { userId, playedAt: { gte: startOfMonth(new Date()) } },
+      include: {
+        track: true,
+      },
+    }),
   ]);
+
+  const monthlyTracks = monthlyTrackHistory.map((entry) => entry.track).filter(Boolean);
+  const popularityValues = monthlyTracks
+    .map((track) => track.popularity)
+    .filter((value): value is number => typeof value === "number");
+  const releaseYears = monthlyTracks
+    .map((track) => track.releaseDate?.getFullYear())
+    .filter((year): year is number => typeof year === "number");
+  const explicitCount = monthlyTracks.filter((track) => track.explicit).length;
 
   const [trackEntities, artistEntities, latestSession] = await Promise.all([
     prisma.track.findMany({
@@ -82,6 +97,17 @@ export async function buildDashboardSummary(userId: string) {
       currentListeningSessionMinutes: latestSession ? minutes(latestSession.durationMs) : 0,
       musicDiscoveryCount: 0,
       newArtistsThisMonth: 0,
+      averagePopularity:
+        popularityValues.length > 0
+          ? Math.round(popularityValues.reduce((sum, value) => sum + value, 0) / popularityValues.length)
+          : 0,
+      explicitPercent:
+        monthlyTracks.length > 0 ? Math.round((explicitCount / monthlyTracks.length) * 100) : 0,
+      averageReleaseYear:
+        releaseYears.length > 0
+          ? Math.round(releaseYears.reduce((sum, year) => sum + year, 0) / releaseYears.length)
+          : 0,
+      topArtistName: artistEntities[0]?.name ?? topArtists[0]?.artistId ?? "N/A",
     },
     recentlyPlayed: recentPlays.map<RecentlyPlayedItem>((play) => ({
       id: play.id,
