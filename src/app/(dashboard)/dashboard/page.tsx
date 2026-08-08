@@ -82,7 +82,7 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <section className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-white/[0.06] p-6 shadow-[0_40px_120px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-8">
+        <section className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-6 shadow-[0_40px_120px_rgba(0,0,0,0.34)] backdrop-blur-xl sm:p-8">
           <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emerald-400/25 blur-3xl" />
           <div className="absolute right-1/4 top-10 h-52 w-52 rounded-full bg-fuchsia-500/15 blur-3xl" />
           <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-400/12 blur-3xl" />
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
           {insightBlocks.map((item, index) => (
             <div
               key={item.label}
-              className="rounded-[1.8rem] border border-emerald-300/12 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.75))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/25 animate-[fadeUp_0.5s_ease-out_forwards]"
+              className="rounded-[1.8rem] border border-emerald-300/12 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.72))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/25 hover:shadow-[0_28px_70px_rgba(16,185,129,0.12)] animate-[fadeUp_0.5s_ease-out_forwards]"
               style={{ animationDelay: `${index * 120}ms` }}
             >
               <p className="text-[11px] uppercase tracking-[0.32em] text-emerald-200/75">{item.label}</p>
@@ -218,7 +218,7 @@ export default async function DashboardPage() {
                   {analytics.charts.heatmapHour.map((hour) => (
                     <div
                       key={hour.hour}
-                      className="flex aspect-square items-center justify-center rounded-xl border border-white/10 text-[11px] text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
+                      className="flex aspect-square items-center justify-center rounded-xl border border-white/10 text-[11px] text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.12)] transition duration-300 hover:scale-[1.03]"
                       style={{ backgroundColor: `rgba(16, 185, 129, ${0.10 + (hour.minutes / hourMax) * 0.72})` }}
                       title={`${hour.hour}:00 - ${hour.minutes} min`}
                     >
@@ -233,7 +233,7 @@ export default async function DashboardPage() {
                   {analytics.charts.heatmapWeekday.map((day) => (
                     <div
                       key={day.day}
-                      className="flex flex-col items-center gap-2 rounded-xl border border-white/10 p-3 text-[11px] text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
+                      className="flex flex-col items-center gap-2 rounded-xl border border-white/10 p-3 text-[11px] text-white/80 shadow-[0_12px_30px_rgba(0,0,0,0.12)] transition duration-300 hover:scale-[1.02]"
                       style={{ backgroundColor: `rgba(16, 185, 129, ${0.10 + (day.minutes / weekdayMax) * 0.72})` }}
                     >
                       <span>{day.day}</span>
@@ -257,7 +257,7 @@ export default async function DashboardPage() {
                 <p className="text-sm text-white/55">No genre data yet.</p>
               ) : (
                 analytics.charts.genreDistribution.map((genre) => (
-                  <div key={genre.genre} className="space-y-2">
+                  <div key={genre.genre} className="space-y-2 rounded-xl border border-white/5 bg-white/[0.02] p-2.5">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-white">{genre.genre}</span>
                       <span className="text-white/60">{genre.percent}%</span>
